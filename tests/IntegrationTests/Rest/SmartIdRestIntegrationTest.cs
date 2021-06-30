@@ -38,8 +38,8 @@ namespace SK.SmartId.IntegrationTests.Rest
     {
         private const string RELYING_PARTY_UUID = "00000000-0000-0000-0000-000000000000";
         private const string RELYING_PARTY_NAME = "DEMO";
-        private const string DOCUMENT_NUMBER = "PNOEE-10101010005-Z1B2-Q";
-        private const string DOCUMENT_NUMBER_LT = "PNOLT-10101010005-Z52N-Q";
+        private const string DOCUMENT_NUMBER = "PNOEE-30303039914-5QSV-Q";
+        private const string DOCUMENT_NUMBER_LT = "PNOLT-30303039914-PBZK-Q";
         private const string DATA_TO_SIGN = "Hello World!";
         private const string CERTIFICATE_LEVEL_QUALIFIED = "QUALIFIED";
         private readonly ISmartIdConnector connector;
@@ -66,7 +66,7 @@ namespace SK.SmartId.IntegrationTests.Rest
         [Fact]
         public async Task authenticate_withSemanticsIdentifier()
         {
-            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, SemanticsIdentifier.CountryCode.LV, "010101-10006");
+            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, SemanticsIdentifier.CountryCode.LV, "030303-10012");
 
             AuthenticationSessionRequest request = createAuthenticationSessionRequest();
             AuthenticationSessionResponse authenticationSessionResponse = await connector.AuthenticateAsync(semanticsIdentifier, request);
