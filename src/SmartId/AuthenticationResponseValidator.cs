@@ -259,7 +259,8 @@ namespace SK.SmartId
                 verify.ChainPolicy.ExtraStore.Add(trustedCACertificate);
             }
 
-            return verify.Build(certificate);
+            return verify.Build(certificate) &&
+                verify.ChainElements[verify.ChainElements.Count - 1].Certificate.Thumbprint == certificate.Thumbprint;
         }
 
         private bool VerifyCertificateLevel(SmartIdAuthenticationResponse authenticationResponse)
