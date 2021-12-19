@@ -252,6 +252,7 @@ namespace SK.SmartId
 
             verify.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             verify.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            verify.ChainPolicy.VerificationFlags = X509VerificationFlags. AllowUnknownCertificateAuthority;
 
             foreach (X509Certificate2 trustedCACertificate in trustedCACertificates)
             {
