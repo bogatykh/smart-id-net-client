@@ -251,16 +251,34 @@ namespace SK.SmartId
             X509Chain verify = new X509Chain();
 
             verify.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-            verify.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-            verify.ChainPolicy.VerificationFlags = X509VerificationFlags. AllowUnknownCertificateAuthority;
+            verify.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
             foreach (X509Certificate2 trustedCACertificate in trustedCACertificates)
             {
                 verify.ChainPolicy.ExtraStore.Add(trustedCACertificate);
             }
 
-            return verify.Build(certificate) &&
-                verify.ChainElements[verify.ChainElements.Count - 1].Certificate.Thumbprint == certificate.Thumbprint;
+            if (verify.Build(certificate) &&
+                verify.ChainStatus.Length == 0)
+            {
+                foreach (var chainElement in verify.ChainElements)
+                {
+                    if (chainElement.Certificate.Thumbprint == certificate.Thumbprint)
+                    {
+                        continue;
+                    }
+
+                    foreach (var trustedCert in verify.ChainPolicy.ExtraStore)
+                    {
+                        if (trustedCert.Thumbprint == chainElement.Certificate.Thumbprint)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
         }
 
         private bool VerifyCertificateLevel(SmartIdAuthenticationResponse authenticationResponse)
