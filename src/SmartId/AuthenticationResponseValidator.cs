@@ -263,14 +263,14 @@ namespace SK.SmartId
             {
                 foreach (var chainElement in verify.ChainElements)
                 {
-                    if (chainElement.Certificate.Thumbprint == certificate.Thumbprint)
+                    if (string.Equals(chainElement.Certificate.Thumbprint, certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
                     foreach (var trustedCert in verify.ChainPolicy.ExtraStore)
                     {
-                        if (trustedCert.Thumbprint == chainElement.Certificate.Thumbprint)
+                        if (string.Equals(trustedCert.Thumbprint, chainElement.Certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
                         {
                             return true;
                         }
