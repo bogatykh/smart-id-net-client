@@ -258,8 +258,7 @@ namespace SK.SmartId
                 verify.ChainPolicy.ExtraStore.Add(trustedCACertificate);
             }
 
-            if (verify.Build(certificate) &&
-                verify.ChainStatus.Length == 0)
+            if (verify.Build(certificate))
             {
                 foreach (var chainElement in verify.ChainElements)
                 {
