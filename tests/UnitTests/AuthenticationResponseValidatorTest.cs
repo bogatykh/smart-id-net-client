@@ -182,8 +182,7 @@ namespace SK.SmartId
                 validator.AddTrustedCACertificate(buffer);
             }
 
-
-            Assert.Equal("CN=TEST of EID-SK 2016, OID.2.5.4.97=NTREE-10747013, O=AS Sertifitseerimiskeskus, C=EE", validator.GetTrustedCACertificates()[0].Subject);
+            Assert.StartsWith("CN=TEST of EID-SK 2016", validator.GetTrustedCACertificates()[0].Subject);
         }
 
         [Fact]
