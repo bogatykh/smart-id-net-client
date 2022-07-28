@@ -30,8 +30,10 @@ using SK.SmartId.Exceptions.UserAccounts;
 using SK.SmartId.Exceptions.UserActions;
 using SK.SmartId.Rest.Dao;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -158,6 +160,7 @@ namespace SK.SmartId.Rest
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             }), System.Text.Encoding.UTF8, "application/json");
+            stringContent.Headers.TryAddWithoutValidation("User-Agent", BuildUserAgentString());
 
             var responseMessage = await configuredClient.PostAsync(uri, stringContent, cancellationToken);
 
@@ -219,6 +222,20 @@ namespace SK.SmartId.Rest
                 TimeSpan queryTimeout = request.ResponseSocketOpenTime.Value;
                 uriBuilder.Query = $"timeoutMs={queryTimeout.TotalMilliseconds}";
             }
+        }
+
+        protected string BuildUserAgentString()
+        {
+            return "smart-id-net-client/" + GetClientVersion() + " (.NET/" + Environment.Version + ")";
+        }
+
+        protected string GetClientVersion()
+        {
+            var assemblyVersionAttribute = GetType().Assembly
+                .GetCustomAttributes<AssemblyVersionAttribute>()
+                .SingleOrDefault();
+
+            return assemblyVersionAttribute?.Version ?? "-";
         }
     }
 }

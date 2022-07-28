@@ -26,6 +26,7 @@
 
 using SK.SmartId.Exceptions;
 using SK.SmartId.Exceptions.UserActions;
+using SK.SmartId.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -289,7 +290,7 @@ namespace SK.SmartId
 
         public AuthenticationIdentity ConstructAuthenticationIdentity(X509Certificate2 certificate)
         {
-            AuthenticationIdentity identity = new AuthenticationIdentity();
+            AuthenticationIdentity identity = new AuthenticationIdentity(certificate);
 
             string[] elements = certificate.SubjectName.Decode(X500DistinguishedNameFlags.UseNewLines | X500DistinguishedNameFlags.DoNotUseQuotes).Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
@@ -320,7 +321,15 @@ namespace SK.SmartId
                 }
             }
 
+            identity.DateOfBirth = GetDateOfBirth(identity);
+
             return identity;
+        }
+
+        private DateTime? GetDateOfBirth(AuthenticationIdentity identity)
+        {
+            return CertificateAttributeUtil.GetDateOfBirth(identity.AuthCertificate) ??
+                NationalIdentityNumberUtil.GetDateOfBirth(identity);
         }
     }
 }

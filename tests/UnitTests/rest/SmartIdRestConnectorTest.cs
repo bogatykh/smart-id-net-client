@@ -37,7 +37,7 @@ namespace SK.SmartId.Rest
 {
     public class SmartIdRestConnectorTest
     {
-        private Mock<HttpMessageHandler> handlerMock;
+        private readonly Mock<HttpMessageHandler> handlerMock;
         private ISmartIdConnector connector;
 
         public SmartIdRestConnectorTest()
@@ -93,6 +93,17 @@ namespace SK.SmartId.Rest
             Assert.StartsWith("luvjsi1+1iLN9yfDFEh/BE8hXtAKhAIxilv", sessionStatus.Signature.Value);
             Assert.Equal("sha256WithRSAEncryption", sessionStatus.Signature.Algorithm);
         }
+
+        //[Fact]
+        //public async Task getSessionStatus_hasUserAgentHeader()
+        //{
+        //    SessionStatus sessionStatus = await GetStubbedSessionStatusWithResponseAsync("responses/sessionStatusForSuccessfulSigningRequest.json");
+        //    assertSuccessfulResponse(sessionStatus);
+
+        //    verify(getRequestedFor(urlMatching("/session/de305d54-75b4-431b-adb2-eb6b9e546016"))
+        //            .withHeader("User-Agent", containing("smart-id-java-client/"))
+        //            .withHeader("User-Agent", containing("Java/")));
+        //}
 
         [Fact]
         public async Task getSessionStatus_userHasRefused()
@@ -281,7 +292,17 @@ namespace SK.SmartId.Rest
             Assert.Equal("2c52caf4-13b0-41c4-bdc6-aa268403cc00", response.SessionId);
         }
 
+        //[Fact]
+        //public async Task sign_hasUserAgentHeader()
+        //{
+        //    SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json", "responses/signatureSessionResponse.json");
+        //    SignatureSessionResponse response = await connector.SignAsync("PNOEE-123456", createDummySignatureSessionRequest());
+        //    Assert.NotNull(response);
 
+        //    verify(postRequestedFor(urlMatching("/signature/document/PNOEE-123456"))
+        //            .withHeader("User-Agent", containing("smart-id-java-client/"))
+        //            .withHeader("User-Agent", containing("Java/")));
+        //}
 
         [Fact]
         public async Task sign_withNonce_usingDocumentNumber()
@@ -480,7 +501,6 @@ namespace SK.SmartId.Rest
             Assert.Equal("1dcc1600-29a6-4e95-a95c-d69b31febcfb", response.SessionId);
         }
 
-
         [Fact]
         public async Task authenticate_withSingleAllowedInteraction_usingDocumentNumber()
         {
@@ -492,6 +512,20 @@ namespace SK.SmartId.Rest
             Assert.NotNull(response);
             Assert.Equal("1dcc1600-29a6-4e95-a95c-d69b31febcfb", response.SessionId);
         }
+
+        //[Fact]
+        //public async Task authenticate_hasUserAgentHeader()
+        //{
+        //    SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequestWithSingleAllowedInteraction.json", "responses/authenticationSessionResponse.json");
+        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+        //    request.AllowedInteractionsOrder = new List<Interaction> { Interaction.DisplayTextAndPIN("Log into internet banking system") };
+
+        //    AuthenticationSessionResponse response = await connector.AuthenticateAsync("PNOEE-123456", request);
+
+        //    verify(postRequestedFor(urlMatching("/authentication/document/PNOEE-123456"))
+        //            .withHeader("User-Agent", containing("smart-id-java-client/"))
+        //            .withHeader("User-Agent", containing("Java/")));
+        //}
 
         //[Fact] (expected = UserAccountNotFoundException)
         //public void authenticate_whenDocumentNumberNotFound_shouldThrowException()
@@ -550,6 +584,18 @@ namespace SK.SmartId.Rest
         //    SmartIdRestServiceStubs.stubErrorResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json", 580);
         //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
         //    connector.authenticate("PNOEE-123456", request);
+        //}
+
+        //[Fact]
+        //public async Task getCertificate_hasUserAgentHeader()
+        //{
+        //    connector = new SmartIdRestConnector("http://localhost:18089");
+        //    SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
+        //    await connector.GetCertificateAsync("PNOEE-123456", createDummyCertificateRequest());
+
+        //    verify(postRequestedFor(urlMatching("/certificatechoice/document/PNOEE-123456"))
+        //            .withHeader("User-Agent", containing("smart-id-java-client/"))
+        //            .withHeader("User-Agent", containing("Java/")));
         //}
 
         private void assertSuccessfulResponse(SessionStatus sessionStatus)

@@ -43,7 +43,7 @@ namespace SK.SmartId.Rest.Dao
         public SessionSignature Signature { get; set; }
 
         [JsonPropertyName("ignoredProperties")]
-        public string[] IgnoredProperties { get; set; }
+        public string[] IgnoredProperties { get; set; } = { };
 
         [JsonPropertyName("interactionFlowUsed")]
         public string InteractionFlowUsed { get; set; }

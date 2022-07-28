@@ -25,11 +25,21 @@
  */
 
 using System;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SK.SmartId
 {
     public class AuthenticationIdentity
     {
+        public AuthenticationIdentity()
+        {
+        }
+
+        public AuthenticationIdentity(X509Certificate2 authCertificate)
+        {
+            AuthCertificate = authCertificate;
+        }
+
         public string GivenName { get; set; }
 
         public string Surname { get; set; }
@@ -42,5 +52,9 @@ namespace SK.SmartId
         public string IdentityCode { get => IdentityNumber; set => IdentityNumber = value; }
 
         public string Country { get; set; }
+
+        public X509Certificate2 AuthCertificate { get; set; }
+
+        public DateTime? DateOfBirth { get; set; }
     }
 }
