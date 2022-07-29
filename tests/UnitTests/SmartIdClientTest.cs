@@ -381,14 +381,14 @@ namespace SK.SmartId
         [Fact]
         public async Task GetCertificate_whenUserAccountNotFound_shouldThrowException()
         {
-            SmartIdRestServiceStubs.stubNotFoundResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json");
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json");
             await Assert.ThrowsAsync<UserAccountNotFoundException>(MakeGetCertificateRequestAsync);
         }
 
         [Fact]
         public async Task Sign_whenUserAccountNotFound_shouldThrowException()
         {
-            SmartIdRestServiceStubs.stubNotFoundResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json");
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json");
             await Assert.ThrowsAsync<UserAccountNotFoundException>(MakeCreateSignatureRequestAsync);
         }
 
@@ -686,7 +686,7 @@ namespace SK.SmartId
         [Fact]
         public async Task Authenticate_whenUserAccountNotFound_shouldThrowException()
         {
-            SmartIdRestServiceStubs.stubNotFoundResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json");
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json");
             await Assert.ThrowsAsync<UserAccountNotFoundException>(MakeAuthenticationRequestAsync);
         }
 

@@ -38,7 +38,7 @@ namespace SK.SmartId
 {
     public static class SmartIdRestServiceStubs
     {
-        public static void stubNotFoundResponse(Mock<HttpMessageHandler> handlerMock, string urlEquals)
+        public static void StubNotFoundResponse(Mock<HttpMessageHandler> handlerMock, string urlEquals)
         {
             var response = new HttpResponseMessage
             {
@@ -56,17 +56,17 @@ namespace SK.SmartId
                .Verifiable();
         }
 
-        public static void stubNotFoundResponse(Mock<HttpMessageHandler> handlerMock, string url, string requestFile)
+        public static void StubNotFoundResponse(Mock<HttpMessageHandler> handlerMock, string url, string requestFile)
         {
             StubErrorResponse(handlerMock, url, requestFile, 404);
         }
 
-        public static void stubUnauthorizedResponse(Mock<HttpMessageHandler> handlerMock, string url, string requestFile)
+        public static void StubUnauthorizedResponse(Mock<HttpMessageHandler> handlerMock, string url, string requestFile)
         {
             StubErrorResponse(handlerMock, url, requestFile, 401);
         }
 
-        public static void stubBadRequestResponse(Mock<HttpMessageHandler> handlerMock, string url, string requestFile)
+        public static void StubBadRequestResponse(Mock<HttpMessageHandler> handlerMock, string url, string requestFile)
         {
             StubErrorResponse(handlerMock, url, requestFile, 400);
         }

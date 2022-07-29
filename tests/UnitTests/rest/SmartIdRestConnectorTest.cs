@@ -26,6 +26,8 @@
 
 using Moq;
 using SK.SmartId.Exceptions;
+using SK.SmartId.Exceptions.Permanent;
+using SK.SmartId.Exceptions.UserActions;
 using SK.SmartId.Rest.Dao;
 using System;
 using System.Collections.Generic;
@@ -49,7 +51,7 @@ namespace SK.SmartId.Rest
         [Fact]
         public async Task getNotExistingSessionStatus()
         {
-            SmartIdRestServiceStubs.stubNotFoundResponse(handlerMock, "/session/de305d54-75b4-431b-adb2-eb6b9e546016");
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/session/de305d54-75b4-431b-adb2-eb6b9e546016");
             SessionStatusRequest request = new SessionStatusRequest("de305d54-75b4-431b-adb2-eb6b9e546016");
             await Assert.ThrowsAsync<SessionNotFoundException>(() => connector.GetSessionStatusAsync("de305d54-75b4-431b-adb2-eb6b9e546016"));
         }
@@ -223,64 +225,64 @@ namespace SK.SmartId.Rest
             Assert.Equal("97f5058e-e308-4c83-ac14-7712b0eb9d86", response.SessionId);
         }
 
-        //[Fact] (expected = UserAccountNotFoundException)
-        //public void getCertificate_whenDocumentNumberNotFound_shoudThrowException()
-        //{
-        //    stubNotFoundResponse("/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task getCertificate_whenDocumentNumberNotFound_shoudThrowException()
+        {
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<UserAccountNotFoundException>(() => connector.GetCertificateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = UserAccountNotFoundException)
-        //public void getCertificate_semanticsIdentifierNotFound_shouldThrowException()
-        //{
-        //    stubNotFoundResponse("/certificatechoice/etsi/IDCCZ-1234567890", "requests/certificateChoiceRequest.json");
+        [Fact]
+        public async Task getCertificate_semanticsIdentifierNotFound_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/certificatechoice/etsi/IDCCZ-1234567890", "requests/certificateChoiceRequest.json");
 
-        //    SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier("IDCCZ-1234567890");
+            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier("IDCCZ-1234567890");
 
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate(semanticsIdentifier, request);
-        //}
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<UserAccountNotFoundException>(() => connector.GetCertificateAsync(semanticsIdentifier, request));
+        }
 
-        //[Fact] (expected = RelyingPartyAccountConfigurationException)
-        //public void getCertificate_withWrongAuthenticationParams_shuldThrowException()
-        //{
-        //    stubUnauthorizedResponse("/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task getCertificate_withWrongAuthenticationParams_shuldThrowException()
+        {
+            SmartIdRestServiceStubs.StubUnauthorizedResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(() => connector.GetCertificateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = SmartIdClientException)
-        //public void getCertificate_withWrongRequestParams_shouldThrowException()
-        //{
-        //    stubBadRequestResponse("/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task getCertificate_withWrongRequestParams_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubBadRequestResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<SmartIdClientException>(() => connector.GetCertificateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = RelyingPartyAccountConfigurationException)
-        //public void getCertificate_whenRequestForbidden_shouldThrowException()
-        //{
-        //    stubForbiddenResponse("/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task getCertificate_whenRequestForbidden_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubForbiddenResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json");
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(() => connector.GetCertificateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = SmartIdClientException)
-        //public void getCertificate_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
-        //{
-        //    SmartIdRestServiceStubs.stubErrorResponse("/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json", 480);
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task getCertificate_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json", 480);
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<SmartIdClientException>(() => connector.GetCertificateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = ServerMaintenanceException)
-        //public void getCertificate_whenSystemUnderMaintenance_shouldThrowException()
-        //{
-        //    SmartIdRestServiceStubs.stubErrorResponse("/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json", 580);
-        //    CertificateRequest request = createDummyCertificateRequest();
-        //    connector.getCertificate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task getCertificate_whenSystemUnderMaintenance_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/certificatechoice/document/PNOEE-123456", "requests/certificateChoiceRequest.json", 580);
+            CertificateRequest request = createDummyCertificateRequest();
+            await Assert.ThrowsAsync<ServerMaintenanceException>(() => connector.GetCertificateAsync("PNOEE-123456", request));
+        }
 
         [Fact]
         public async Task sign_usingDocumentNumber()
@@ -389,53 +391,53 @@ namespace SK.SmartId.Rest
             Assert.Equal("2c52caf4-13b0-41c4-bdc6-aa268403cc00", response.SessionId);
         }
 
-        //[Fact] (expected = UserAccountNotFoundException)
-        //public void sign_whenDocumentNumberNotFound_shouldThrowException()
-        //{
-        //    stubNotFoundResponse("/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
-        //    SignatureSessionRequest request = createDummySignatureSessionRequest();
-        //    connector.sign("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task sign_whenDocumentNumberNotFound_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
+            SignatureSessionRequest request = createDummySignatureSessionRequest();
+            await Assert.ThrowsAsync<UserAccountNotFoundException>(() => connector.SignAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = RelyingPartyAccountConfigurationException)
-        //public void sign_withWrongAuthenticationParams_shouldThrowException()
-        //{
-        //    stubUnauthorizedResponse("/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
-        //    SignatureSessionRequest request = createDummySignatureSessionRequest();
-        //    connector.sign("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task sign_withWrongAuthenticationParams_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubUnauthorizedResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
+            SignatureSessionRequest request = createDummySignatureSessionRequest();
+            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(() => connector.SignAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = SmartIdClientException)
-        //public void sign_withWrongRequestParams_shouldThrowException()
-        //{
-        //    stubBadRequestResponse("/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
-        //    SignatureSessionRequest request = createDummySignatureSessionRequest();
-        //    connector.sign("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task sign_withWrongRequestParams_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubBadRequestResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
+            SignatureSessionRequest request = createDummySignatureSessionRequest();
+            await Assert.ThrowsAsync<SmartIdClientException>(() => connector.SignAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = RelyingPartyAccountConfigurationException)
-        //public void sign_whenRequestForbidden_shouldThrowException()
-        //{
-        //    stubForbiddenResponse("/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
-        //    SignatureSessionRequest request = createDummySignatureSessionRequest();
-        //    connector.sign("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task sign_whenRequestForbidden_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubForbiddenResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json");
+            SignatureSessionRequest request = createDummySignatureSessionRequest();
+            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(() => connector.SignAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = SmartIdClientException)
-        //public void sign_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
-        //{
-        //    SmartIdRestServiceStubs.stubErrorResponse("/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json", 480);
-        //    SignatureSessionRequest request = createDummySignatureSessionRequest();
-        //    connector.sign("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task sign_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json", 480);
+            SignatureSessionRequest request = createDummySignatureSessionRequest();
+            await Assert.ThrowsAsync<SmartIdClientException>(() => connector.SignAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = ServerMaintenanceException)
-        //public void sign_whenSystemUnderMaintenance_shouldThrowException()
-        //{
-        //    SmartIdRestServiceStubs.stubErrorResponse("/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json", 580);
-        //    SignatureSessionRequest request = createDummySignatureSessionRequest();
-        //    connector.sign("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task sign_whenSystemUnderMaintenance_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/signature/document/PNOEE-123456", "requests/signatureSessionRequest.json", 580);
+            SignatureSessionRequest request = createDummySignatureSessionRequest();
+            await Assert.ThrowsAsync<ServerMaintenanceException>(() => connector.SignAsync("PNOEE-123456", request));
+        }
 
         [Fact]
         public async Task authenticate_usingDocumentNumber()
@@ -527,64 +529,64 @@ namespace SK.SmartId.Rest
         //            .withHeader("User-Agent", containing("Java/")));
         //}
 
-        //[Fact] (expected = UserAccountNotFoundException)
-        //public void authenticate_whenDocumentNumberNotFound_shouldThrowException()
-        //{
-        //    stubNotFoundResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task authenticate_whenDocumentNumberNotFound_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<UserAccountNotFoundException>(() => connector.AuthenticateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = UserAccountNotFoundException)
-        //public void authenticate_whenSemanticsIdentifierNotFound_shouldThrowException()
-        //{
-        //    stubNotFoundResponse("/authentication/etsi/IDCLV-230883-19894", "requests/authenticationSessionRequest.json");
+        [Fact]
+        public async Task authenticate_whenSemanticsIdentifierNotFound_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/authentication/etsi/IDCLV-230883-19894", "requests/authenticationSessionRequest.json");
 
-        //    SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.IDC, SemanticsIdentifier.CountryCode.LV, "230883-19894");
+            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.IDC, SemanticsIdentifier.CountryCode.LV, "230883-19894");
 
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate(semanticsIdentifier, request);
-        //}
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<UserAccountNotFoundException>(() => connector.AuthenticateAsync(semanticsIdentifier, request));
+        }
 
-        //[Fact] (expected = RelyingPartyAccountConfigurationException)
-        //public void authenticate_withWrongAuthenticationParams_shuldThrowException()
-        //{
-        //    stubUnauthorizedResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task authenticate_withWrongAuthenticationParams_shuldThrowException()
+        {
+            SmartIdRestServiceStubs.StubUnauthorizedResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(() => connector.AuthenticateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = SmartIdClientException)
-        //public void authenticate_withWrongRequestParams_shouldThrowException()
-        //{
-        //    stubBadRequestResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task authenticate_withWrongRequestParams_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubBadRequestResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<SmartIdClientException>(() => connector.AuthenticateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = RelyingPartyAccountConfigurationException)
-        //public void authenticate_whenRequestForbidden_shouldThrowException()
-        //{
-        //    stubForbiddenResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task authenticate_whenRequestForbidden_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubForbiddenResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json");
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(() => connector.AuthenticateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = SmartIdClientException)
-        //public void authenticate_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
-        //{
-        //    SmartIdRestServiceStubs.stubErrorResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json", 480);
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task authenticate_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json", 480);
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<SmartIdClientException>(() => connector.AuthenticateAsync("PNOEE-123456", request));
+        }
 
-        //[Fact] (expected = ServerMaintenanceException)
-        //public void authenticate_whenSystemUnderMaintenance_shouldThrowException()
-        //{
-        //    SmartIdRestServiceStubs.stubErrorResponse("/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json", 580);
-        //    AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
-        //    connector.authenticate("PNOEE-123456", request);
-        //}
+        [Fact]
+        public async Task authenticate_whenSystemUnderMaintenance_shouldThrowException()
+        {
+            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/authentication/document/PNOEE-123456", "requests/authenticationSessionRequest.json", 580);
+            AuthenticationSessionRequest request = createDummyAuthenticationSessionRequest();
+            await Assert.ThrowsAsync<ServerMaintenanceException>(() => connector.AuthenticateAsync("PNOEE-123456", request));
+        }
 
         //[Fact]
         //public async Task getCertificate_hasUserAgentHeader()
