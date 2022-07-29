@@ -12,8 +12,7 @@ namespace SK.SmartId.Util
         {
             X509Certificate2 eeCertificate = AuthenticationResponseValidatorTest.GetX509Certificate(AuthenticationResponseValidatorTest.GetX509CertificateBytes(AuthenticationResponseValidatorTest.AUTH_CERTIFICATE_EE));
 
-            AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
-            AuthenticationIdentity identity = validator.ConstructAuthenticationIdentity(eeCertificate);
+            AuthenticationIdentity identity = AuthenticationResponseValidator.ConstructAuthenticationIdentity(eeCertificate);
 
 
             var dateOfBirth = NationalIdentityNumberUtil.GetDateOfBirth(identity);
@@ -27,8 +26,7 @@ namespace SK.SmartId.Util
         {
             X509Certificate2 lvCertificate = AuthenticationResponseValidatorTest.GetX509Certificate(AuthenticationResponseValidatorTest.GetX509CertificateBytes(AuthenticationResponseValidatorTest.AUTH_CERTIFICATE_LV_DOB_03_APRIL_1903));
 
-            AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
-            AuthenticationIdentity identity = validator.ConstructAuthenticationIdentity(lvCertificate);
+            AuthenticationIdentity identity = AuthenticationResponseValidator.ConstructAuthenticationIdentity(lvCertificate);
 
             var dateOfBirth = NationalIdentityNumberUtil.GetDateOfBirth(identity);
 
@@ -41,8 +39,7 @@ namespace SK.SmartId.Util
         {
             X509Certificate2 ltCertificate = AuthenticationResponseValidatorTest.GetX509Certificate(AuthenticationResponseValidatorTest.GetX509CertificateBytes(AuthenticationResponseValidatorTest.AUTH_CERTIFICATE_LT));
 
-            AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
-            AuthenticationIdentity identity = validator.ConstructAuthenticationIdentity(ltCertificate);
+            AuthenticationIdentity identity = AuthenticationResponseValidator.ConstructAuthenticationIdentity(ltCertificate);
 
             var dateOfBirth = NationalIdentityNumberUtil.GetDateOfBirth(identity);
 

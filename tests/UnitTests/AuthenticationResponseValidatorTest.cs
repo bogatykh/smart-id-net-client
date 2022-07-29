@@ -252,7 +252,7 @@ namespace SK.SmartId
         {
             X509Certificate2 certificateEe = GetX509Certificate(GetX509CertificateBytes(AUTH_CERTIFICATE_EE));
 
-            AuthenticationIdentity authenticationIdentity = validator.ConstructAuthenticationIdentity(certificateEe);
+            AuthenticationIdentity authenticationIdentity = AuthenticationResponseValidator.ConstructAuthenticationIdentity(certificateEe);
 
             Assert.Equal("10101010005", authenticationIdentity.IdentityNumber);
             Assert.Equal("EE", authenticationIdentity.Country);
@@ -268,7 +268,7 @@ namespace SK.SmartId
         {
             X509Certificate2 certificateLv = GetX509Certificate(GetX509CertificateBytes(AUTH_CERTIFICATE_LV));
 
-            AuthenticationIdentity authenticationIdentity = validator.ConstructAuthenticationIdentity(certificateLv);
+            AuthenticationIdentity authenticationIdentity = AuthenticationResponseValidator.ConstructAuthenticationIdentity(certificateLv);
 
             Assert.Equal("010117-21234", authenticationIdentity.IdentityNumber);
             Assert.Equal("LV", authenticationIdentity.Country);
@@ -284,7 +284,7 @@ namespace SK.SmartId
         {
             X509Certificate2 certificateLt = GetX509Certificate(GetX509CertificateBytes(AUTH_CERTIFICATE_LT));
 
-            AuthenticationIdentity authenticationIdentity = validator.ConstructAuthenticationIdentity(certificateLt);
+            AuthenticationIdentity authenticationIdentity = AuthenticationResponseValidator.ConstructAuthenticationIdentity(certificateLt);
 
             Assert.Equal("36009067968", authenticationIdentity.IdentityNumber);
             Assert.Equal("LT", authenticationIdentity.Country);

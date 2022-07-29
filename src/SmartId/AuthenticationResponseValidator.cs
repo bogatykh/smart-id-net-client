@@ -288,7 +288,7 @@ namespace SK.SmartId
             return string.IsNullOrEmpty(requestedCertificateLevel) || certLevel.IsEqualOrAbove(requestedCertificateLevel);
         }
 
-        public AuthenticationIdentity ConstructAuthenticationIdentity(X509Certificate2 certificate)
+        public static AuthenticationIdentity ConstructAuthenticationIdentity(X509Certificate2 certificate)
         {
             AuthenticationIdentity identity = new AuthenticationIdentity(certificate);
 
@@ -326,7 +326,7 @@ namespace SK.SmartId
             return identity;
         }
 
-        private DateTime? GetDateOfBirth(AuthenticationIdentity identity)
+        private static DateTime? GetDateOfBirth(AuthenticationIdentity identity)
         {
             return CertificateAttributeUtil.GetDateOfBirth(identity.AuthCertificate) ??
                 NationalIdentityNumberUtil.GetDateOfBirth(identity);
