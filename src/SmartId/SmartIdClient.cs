@@ -64,11 +64,10 @@ namespace SK.SmartId
             return builder;
         }
 
-        /**
-         * Gets an instance of the authentication request builder
-         *
-         * @return authentication request builder instance
-         */
+        /// <summary>
+        /// Gets an instance of the authentication request builder
+        /// </summary>
+        /// <returns>authentication request builder instance</returns>
         public AuthenticationRequestBuilder CreateAuthentication()
         {
             SessionStatusPoller sessionStatusPoller = CreateSessionStatusPoller(SmartIdConnector);

@@ -139,7 +139,7 @@ namespace SK.SmartId
         /// authentication is deemed untrusted and therefore not valid.
         /// </para>
         /// </summary>
-        /// <exception cref="CertificateException when there was an error constructing the certificate from bytes
+        /// <exception cref="CertificateException">when there was an error constructing the certificate from bytes</exception>
         /// <param name="certificateBytes">certificateBytes trusted CA certificate</param>
         public void AddTrustedCACertificate(byte[] certificateBytes)
         {
@@ -147,32 +147,26 @@ namespace SK.SmartId
             AddTrustedCACertificate(caCertificate);
         }
 
-        /**
-        /// Constructs a certificate from the file
-        /// and adds it into the list of trusted CA certificates
-        /// <para>
-        /// Authenticating person's certificate has to be issued by
-        /// one of the trusted CA certificates. Otherwise the person's
-        vauthentication is deemed untrusted and therefore not valid.
-         *
-         /// <exception cref="IOException when there is an error reading the file
-         /// <exception cref="CertificateException when there is an error constructing the certificate from the bytes of the file
-         *
-        /// @param certificateFile trusted CA certificate
-         */
+        /// <summary>
+        /// Constructs a certificate from the file and adds it into the list of trusted CA certificates
+        /// <para>Authenticating person's certificate has to be issued by one of the trusted CA certificates. Otherwise the person's authentication is deemed untrusted and therefore not valid.</para>
+        /// </summary>
+        /// <param name="certificateFile">trusted CA certificate</param>
+        /// <exception cref="CertificateException">when there is an error constructing the certificate from the bytes of the file</exception>
         public void AddTrustedCACertificate(string certificateFile)
         {
             AddTrustedCACertificate(File.ReadAllBytes(certificateFile));
         }
 
-        /**
+        /// <summary>
         /// Clears the list of trusted CA certificates
-        /// <para>
+        /// </summary>
+        /// <remarks>
         /// PS! When clearing the trusted CA certificates
         /// make sure it is not left empty. In that case
         /// there is impossible to verify the trust of the
         /// authenticating person.
-         */
+        /// </remarks>
         public void ClearTrustedCACertificates()
         {
             trustedCACertificates.Clear();

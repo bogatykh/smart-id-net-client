@@ -261,33 +261,29 @@ namespace SK.SmartId
             return this;
         }
 
-        /**
-         * @param allowedInteractionsOrder Preferred order of what dialog to present to user. What actually gets displayed depends on user's device and its software version.
-         *                                 First option from this list that the device is capable of handling is displayed to the user.
-         * @return this builder
-         */
+        /// <param name="allowedInteractionsOrder">
+        /// Preferred order of what dialog to present to user. What actually gets displayed depends on user's device and its software version.
+        /// First option from this list that the device is capable of handling is displayed to the user.
+        /// </param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithAllowedInteractionsOrder(List<Interaction> allowedInteractionsOrder)
         {
             this.allowedInteractionsOrder = allowedInteractionsOrder;
             return this;
         }
 
-        /**
-         * Send the signature request and get the response
-         * <para>
-         * This method uses automatic session status polling internally
-         * and therefore blocks the current thread until signing is concluded/interupted etc.
-         *
-         /// <exception cref="UserAccountNotFoundException when the user account was not found
-         /// <exception cref="UserRefusedException when the user has refused the session. NB! This exception has subclasses to determine the screen where user pressed cancel.
-         /// <exception cref="UserSelectedWrongVerificationCodeException when user was presented with three control codes and user selected wrong code
-         /// <exception cref="SessionTimeoutException when there was a timeout, i.e. end user did not confirm or refuse the operation within given timeframe
-         /// <exception cref="DocumentUnusableException when for some reason, this relying party request cannot be completed.
-         *                                   User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason.
-         /// <exception cref="ServerMaintenanceException when the server is under maintenance
-         *
-         * @return the signature response
-         */
+        /// <summary>
+        /// Send the signature request and get the response
+        /// </summary>
+        /// <remarks>This method uses automatic session status polling internally and therefore blocks the current thread until signing is concluded/interupted etc.</remarks>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>the signature response</returns>
+        /// <exception cref="Exceptions.UserActions.UserAccountNotFoundException">when the user account was not found</exception>
+        /// <exception cref="Exceptions.UserActions.UserRefusedException">when the user has refused the session. NB! This exception has subclasses to determine the screen where user pressed cancel.</exception>
+        /// <exception cref="Exceptions.UserActions.UserSelectedWrongVerificationCodeException">when user was presented with three control codes and user selected wrong code</exception>
+        /// <exception cref="Exceptions.UserActions.SessionTimeoutException">when there was a timeout, i.e. end user did not confirm or refuse the operation within given timeframe</exception>
+        /// <exception cref="Exceptions.UserAccounts.DocumentUnusableException">when for some reason, this relying party request cannot be completed. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason.</exception>
+        /// <exception cref="Exceptions.Permanent.ServerMaintenanceException">when the server is under maintenance</exception>
         public async Task<SmartIdSignature> SignAsync(CancellationToken cancellationToken = default)
         {
             ValidateParameters();
@@ -298,11 +294,11 @@ namespace SK.SmartId
 
         /// <summary>
         /// Send the signature request and get the session Id
-        /// <exception cref="Exceptions.UserActions.UserAccountNotFoundException">when the user account was not found</exception>
-        /// <exception cref="Exceptions.Permanent.ServerMaintenanceException">when the server is under maintenance</exception>
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>session Id - later to be used for manual session status polling</returns>
+        /// <exception cref="Exceptions.UserActions.UserAccountNotFoundException">when the user account was not found</exception>
+        /// <exception cref="Exceptions.Permanent.ServerMaintenanceException">when the server is under maintenance</exception>
         public async Task<string> InitiateSigningAsync(CancellationToken cancellationToken = default)
         {
             ValidateParameters();
@@ -327,12 +323,12 @@ namespace SK.SmartId
         /// Get <see cref="SmartIdSignature"/>
         /// from <see cref="SessionStatus"/>
         /// </summary>
+        /// <param name="sessionStatus">session status response</param>
+        /// <returns>the authentication response</returns>
         /// <exception cref="Exceptions.UserActions.UserRefusedException">when the user has refused the session. NB! This exception has subclasses to determine the screen where user pressed cancel.</exception>
         /// <exception cref="Exceptions.UserActions.SessionTimeoutException">when there was a timeout, i.e. end user did not confirm or refuse the operation within given timeframe</exception>
         /// <exception cref="Exceptions.UserAccounts.DocumentUnusableException">when for some reason, this relying party request cannot be completed.</exception>
         /// <exception cref="UnprocessableSmartIdResponseException">when session status response's result is missing or it has some unknown value</exception>
-        /// <param name="sessionStatus">session status response</param>
-        /// <returns>the authentication response</returns>
         public SmartIdSignature CreateSmartIdSignature(SessionStatus sessionStatus)
         {
             ValidateSignatureResponse(sessionStatus);

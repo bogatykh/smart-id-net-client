@@ -40,7 +40,7 @@ namespace SK.SmartId
     /// <list type="bullet">
     ///     <item>
     ///         <term>Host url</term>
-    ///         <description>can be set on the {@link ee.sk.smartid.SmartIdClient} level</description>
+    ///         <description>can be set on the <see cref="SmartIdClient"/> level</description>
     ///     </item>
     ///     <item>
     ///         <term>Relying party uuid</term>
