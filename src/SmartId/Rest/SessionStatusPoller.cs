@@ -60,7 +60,7 @@ namespace SK.SmartId.Rest
             while (sessionStatus == null || string.Equals("RUNNING", sessionStatus.State, StringComparison.OrdinalIgnoreCase))
             {
                 sessionStatus = await PollSessionStatusAsync(sessionId, cancellationToken);
-                if (string.Equals("COMPLETE", sessionStatus.State, StringComparison.OrdinalIgnoreCase))
+                if (sessionStatus != null && string.Equals("COMPLETE", sessionStatus.State, StringComparison.OrdinalIgnoreCase))
                 {
                     break;
                 }
