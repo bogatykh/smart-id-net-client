@@ -64,7 +64,7 @@ namespace SK.SmartId.Rest
                 {
                     break;
                 }
-                await Task.Delay(pollingSleepTimeout);
+                await Task.Delay(pollingSleepTimeout, cancellationToken);
             }
             return sessionStatus;
         }
