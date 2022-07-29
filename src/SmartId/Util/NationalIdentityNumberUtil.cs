@@ -7,7 +7,7 @@ namespace SK.SmartId.Util
 {
     public static class NationalIdentityNumberUtil
     {
-        private const string DATE_FORMAT = "yyyyMMdd";
+        private const string DATE_FORMAT_YYYY_MM_DD = "yyyyMMdd";
 
         /// <summary>
         /// Detect date-of-birth from national identification number if possible or return null.
@@ -58,7 +58,7 @@ namespace SK.SmartId.Util
 
             try
             {
-                return DateTime.ParseExact(birthDate, DATE_FORMAT, CultureInfo.InvariantCulture);
+                return DateTime.ParseExact(birthDate, DATE_FORMAT_YYYY_MM_DD, CultureInfo.InvariantCulture);
             }
             catch (FormatException e)
             {
@@ -66,26 +66,30 @@ namespace SK.SmartId.Util
             }
         }
 
-        public static DateTime? ParseLvDateOfBirth(String lvNationalIdentityNumber)
+        public static DateTime? ParseLvDateOfBirth(string lvNationalIdentityNumber)
         {
-            if ("32".Equals(lvNationalIdentityNumber.Substring(0, 2)))
+            string birthDay = lvNationalIdentityNumber.Substring(0, 2);
+            if ("32".Equals(birthDay))
             {
                 Debug.WriteLine("Person has newer type of Latvian ID-code that does not carry birthdate info");
                 return null;
             }
 
-            string birthDate = lvNationalIdentityNumber.Substring(4, 2) + lvNationalIdentityNumber.Substring(0, 4);
+            string birthMonth = lvNationalIdentityNumber.Substring(2, 2);
+            string birthYearTwoDigit = lvNationalIdentityNumber.Substring(4, 2);
+            string century = lvNationalIdentityNumber.Substring(7, 1);
+            string birthDateYyyyMmDd;
 
-            switch (lvNationalIdentityNumber.Substring(7, 1))
+            switch (century)
             {
                 case "0":
-                    birthDate = "18" + birthDate;
+                    birthDateYyyyMmDd = "18" + (birthYearTwoDigit + birthMonth + birthDay);
                     break;
                 case "1":
-                    birthDate = "19" + birthDate;
+                    birthDateYyyyMmDd = "19" + (birthYearTwoDigit + birthMonth + birthDay);
                     break;
                 case "2":
-                    birthDate = "20" + birthDate;
+                    birthDateYyyyMmDd = "20" + (birthYearTwoDigit + birthMonth + birthDay);
                     break;
                 default:
                     throw new UnprocessableSmartIdResponseException("Invalid personal code: " + lvNationalIdentityNumber);
@@ -93,7 +97,7 @@ namespace SK.SmartId.Util
 
             try
             {
-                return DateTime.ParseExact(birthDate, DATE_FORMAT, CultureInfo.InvariantCulture);
+                return DateTime.ParseExact(birthDateYyyyMmDd, DATE_FORMAT_YYYY_MM_DD, CultureInfo.InvariantCulture);
             }
             catch (FormatException e)
             {

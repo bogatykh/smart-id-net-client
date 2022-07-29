@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SK.SmartId.Exceptions;
+using System;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
@@ -24,7 +25,7 @@ namespace SK.SmartId.Util
         [Fact]
         public void getDateOfBirthFromIdCode_latvianIdCode_returns()
         {
-            X509Certificate2 lvCertificate = AuthenticationResponseValidatorTest.GetX509Certificate(AuthenticationResponseValidatorTest.GetX509CertificateBytes(AuthenticationResponseValidatorTest.AUTH_CERTIFICATE_LV));
+            X509Certificate2 lvCertificate = AuthenticationResponseValidatorTest.GetX509Certificate(AuthenticationResponseValidatorTest.GetX509CertificateBytes(AuthenticationResponseValidatorTest.AUTH_CERTIFICATE_LV_DOB_03_APRIL_1903));
 
             AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
             AuthenticationIdentity identity = validator.ConstructAuthenticationIdentity(lvCertificate);
@@ -32,7 +33,7 @@ namespace SK.SmartId.Util
             var dateOfBirth = NationalIdentityNumberUtil.GetDateOfBirth(identity);
 
             Assert.NotNull(dateOfBirth);
-            Assert.Equal(new DateTime(2017, 1, 1), dateOfBirth);
+            Assert.Equal(new DateTime(1903, 4, 3), dateOfBirth);
         }
 
         [Fact]
@@ -48,6 +49,47 @@ namespace SK.SmartId.Util
             Assert.NotNull(dateOfBirth);
             Assert.Equal(new DateTime(1960, 9, 6), dateOfBirth);
         }
+        [Fact]
+        public void parseLvDateOfBirth_withoutDateOfBirth_returnsNull()
+        {
+            var birthDate = NationalIdentityNumberUtil.ParseLvDateOfBirth("321205-1234");
+            Assert.Null(birthDate);
+        }
 
+        [Fact]
+        public void parseLvDateOfBirth_21century()
+        {
+            var birthDate = NationalIdentityNumberUtil.ParseLvDateOfBirth("131205-2234");
+            Assert.Equal(new DateTime(2005, 12, 13), birthDate);
+        }
+
+        [Fact]
+        public void parseLvDateOfBirth_20century()
+        {
+            var birthDate = NationalIdentityNumberUtil.ParseLvDateOfBirth("131265-1234");
+            Assert.Equal(new DateTime(1965, 12, 13), birthDate);
+        }
+
+        [Fact]
+        public void parseLvDateOfBirth_19century()
+        {
+            var birthDate = NationalIdentityNumberUtil.ParseLvDateOfBirth("131265-0234");
+            Assert.Equal(new DateTime(1865, 12, 13), birthDate);
+        }
+
+        [Fact]
+        public void parseLvDateOfBirth_invalidMonth_throwsException()
+        {
+            var exception = Assert.Throws<UnprocessableSmartIdResponseException>(() => NationalIdentityNumberUtil.ParseLvDateOfBirth("131365-1234"));
+
+            Assert.Equal("Unable get birthdate from Latvian personal code 131365-1234", exception.Message);
+        }
+
+        [Fact]
+        public void parseLvDateOfBirth_invalidIdCode_throwsException()
+        {
+            var exception = Assert.Throws<UnprocessableSmartIdResponseException>(() => NationalIdentityNumberUtil.ParseLvDateOfBirth("331265-0234"));
+            Assert.Equal("Unable get birthdate from Latvian personal code 331265-0234", exception.Message);
+    }
     }
 }
