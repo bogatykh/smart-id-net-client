@@ -73,7 +73,7 @@ namespace SK.SmartId.Rest
             AddMultipleRunningSessionResponses(5);
             connector.responses.Add(CreateCompleteSessionStatus());
             double duration = await MeasurePollingDurationAsync();
-            Assert.InRange(duration, 1000L, 1500L);
+            Assert.InRange(duration, 1000L, 2500L);
         }
 
         [Fact]
