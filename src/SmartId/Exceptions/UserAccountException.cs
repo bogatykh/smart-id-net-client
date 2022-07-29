@@ -9,7 +9,7 @@ namespace SK.SmartId.Exceptions
     [Serializable]
     public abstract class UserAccountException : SmartIdException
     {
-        public UserAccountException(string s)
+        protected UserAccountException(string s)
             : base(s)
         {
         }
