@@ -87,6 +87,26 @@ namespace SK.SmartId.Util
         {
             var exception = Assert.Throws<UnprocessableSmartIdResponseException>(() => NationalIdentityNumberUtil.ParseLvDateOfBirth("331265-0234"));
             Assert.Equal("Unable get birthdate from Latvian personal code 331265-0234", exception.Message);
-    }
+        }
+
+        [Fact]
+        public void getDateOfBirthFromIdCode_sweden_returnsNull()
+        {
+            AuthenticationIdentity identity = new AuthenticationIdentity();
+            identity.Country = "SE";
+            identity.IdentityNumber = "1995012-79039";
+
+            Assert.Null(NationalIdentityNumberUtil.GetDateOfBirth(identity));
+        }
+
+        [Fact]
+        public void getDateOfBirthFromIdCode_poland_returnsNull()
+        {
+            AuthenticationIdentity identity = new AuthenticationIdentity();
+            identity.Country = "PL";
+            identity.IdentityNumber = "64120301283";
+
+            Assert.Null(NationalIdentityNumberUtil.GetDateOfBirth(identity));
+        }
     }
 }

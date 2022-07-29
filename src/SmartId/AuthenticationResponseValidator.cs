@@ -326,7 +326,7 @@ namespace SK.SmartId
             return identity;
         }
 
-        private static DateTime? GetDateOfBirth(AuthenticationIdentity identity)
+        public static DateTime? GetDateOfBirth(AuthenticationIdentity identity)
         {
             return CertificateAttributeUtil.GetDateOfBirth(identity.AuthCertificate) ??
                 NationalIdentityNumberUtil.GetDateOfBirth(identity);

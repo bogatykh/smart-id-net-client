@@ -10,10 +10,11 @@ namespace SK.SmartId.Util
         private const string DATE_FORMAT_YYYY_MM_DD = "yyyyMMdd";
 
         /// <summary>
-        /// Detect date-of-birth from national identification number if possible or return null.
+        /// Detect date-of-birth from a Baltic national identification number if possible or return null.
         /// <para>This method always returns the value for all Estonian and Lithuanian national identification numbers.</para>
         /// <para>It also works for older Latvian personal codes but Latvian personal codes issued after July 1st 2017 (starting with "32") do not carry date-of-birth.</para>
-        /// <para>Some (but not all) Smart-ID certificates have date-of-birth on a separate attribute. It is recommended to use that value if present</para>
+        /// <para>For non-Baltic countries (countries other than Estonia, Latvia or Lithuania) it always returns null (even if it would be possible to deduce date of birth from national identity number).</para>
+        /// <para>Newer (but not all) Smart-ID certificates have date-of-birth on a separate attribute. It is recommended to use that value if present</para>
         /// <see cref="CertificateAttributeUtil.GetDateOfBirth(System.Security.Cryptography.X509Certificates.X509Certificate2)"/>
         /// </summary>
         /// <param name="authenticationIdentity">Authentication identity</param>
@@ -30,7 +31,7 @@ namespace SK.SmartId.Util
                 case "LV":
                     return ParseLvDateOfBirth(identityNumber);
                 default:
-                    throw new UnprocessableSmartIdResponseException("Unknown country: " + authenticationIdentity.Country);
+                    return null;
             }
         }
 
