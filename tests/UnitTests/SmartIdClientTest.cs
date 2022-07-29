@@ -344,7 +344,6 @@ namespace SK.SmartId
             SmartIdSignature signature = builder.CreateSmartIdSignature(sessionStatus);
 
             AssertValidSignatureCreated(signature);
-            //TODO: verify(getRequestedFor(urlEqualTo("/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00")));
         }
 
         [Fact]
@@ -647,7 +646,6 @@ namespace SK.SmartId
             SmartIdAuthenticationResponse authenticationResponse = builder.CreateSmartIdAuthenticationResponse(sessionStatus);
 
             AssertAuthenticationResponseValid(authenticationResponse);
-            //TODO: verify(getRequestedFor(urlEqualTo("/session/1dcc1600-29a6-4e95-a95c-d69b31febcfb")));
         }
 
         [Fact]
