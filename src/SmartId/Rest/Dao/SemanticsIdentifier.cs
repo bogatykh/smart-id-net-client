@@ -28,23 +28,23 @@ using System;
 
 namespace SK.SmartId.Rest.Dao
 {
-    public class SemanticsIdentifier
+    public struct SemanticsIdentifier : IEquatable<SemanticsIdentifier>
     {
-        protected string identifier;
+        private readonly string identifier;
 
         public SemanticsIdentifier(IdentityType identityType, CountryCode countryCode, string identityNumber)
         {
-            this.identifier = "" + identityType + countryCode + "-" + identityNumber;
+            identifier = "" + identityType + countryCode + "-" + identityNumber;
         }
 
         public SemanticsIdentifier(IdentityType identityType, string countryCodeString, string identityNumber)
         {
-            this.identifier = "" + identityType + countryCodeString + "-" + identityNumber;
+            identifier = "" + identityType + countryCodeString + "-" + identityNumber;
         }
 
         public SemanticsIdentifier(string identityTypeString, string countryCodeString, string identityNumber)
         {
-            this.identifier = "" + identityTypeString + countryCodeString + "-" + identityNumber;
+            identifier = "" + identityTypeString + countryCodeString + "-" + identityNumber;
         }
 
         public SemanticsIdentifier(string identifier)
@@ -69,6 +69,39 @@ namespace SK.SmartId.Rest.Dao
             return "SemanticsIdentifier{" +
                 "identifier='" + identifier + '\'' +
                 '}';
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is SemanticsIdentifier other)
+            {
+                return Equals(other);
+            }
+            return false;
+        }
+
+        public bool Equals(SemanticsIdentifier other)
+        {
+            return string.Equals(identifier, other.identifier, StringComparison.Ordinal);
+        }
+
+        public override int GetHashCode()
+        {
+            if (identifier == null)
+            {
+                return 0;
+            }
+            return identifier.GetHashCode();
+        }
+
+        public static bool operator ==(SemanticsIdentifier left, SemanticsIdentifier right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(SemanticsIdentifier left, SemanticsIdentifier right)
+        {
+            return !(left == right);
         }
     }
 }

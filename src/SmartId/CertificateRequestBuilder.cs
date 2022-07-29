@@ -288,7 +288,7 @@ namespace SK.SmartId
             }
             else if (SemanticsIdentifier != null)
             {
-                return await Connector.GetCertificateAsync(SemanticsIdentifier, request, cancellationToken);
+                return await Connector.GetCertificateAsync(SemanticsIdentifier.Value, request, cancellationToken);
             }
             else
             {

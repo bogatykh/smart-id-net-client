@@ -204,7 +204,7 @@ namespace SK.SmartId
 
         protected string Nonce { get; set; }
 
-        public SemanticsIdentifier SemanticsIdentifier { get; protected set; }
+        public SemanticsIdentifier? SemanticsIdentifier { get; protected set; }
 
         public HashSet<string> Capabilities => capabilities;
 

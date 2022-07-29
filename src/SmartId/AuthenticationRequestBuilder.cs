@@ -358,7 +358,7 @@ namespace SK.SmartId
             }
             else
             {
-                return await Connector.AuthenticateAsync(SemanticsIdentifier, request, cancellationToken);
+                return await Connector.AuthenticateAsync(SemanticsIdentifier.Value, request, cancellationToken);
             }
         }
 
