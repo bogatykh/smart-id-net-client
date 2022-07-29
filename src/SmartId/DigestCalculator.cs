@@ -28,7 +28,7 @@ using System.Security.Cryptography;
 
 namespace SK.SmartId
 {
-    public class DigestCalculator
+    public static class DigestCalculator
     {
         public static byte[] CalculateDigest(byte[] dataToDigest, HashType hashType)
         {

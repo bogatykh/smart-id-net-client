@@ -31,7 +31,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace SK.SmartId
 {
-    public class CertificateParser
+    public static class CertificateParser
     {
         public static X509Certificate2 ParseX509Certificate(string certificateValue)
         {

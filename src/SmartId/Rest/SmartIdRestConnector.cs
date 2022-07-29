@@ -156,53 +156,55 @@ namespace SK.SmartId.Rest
 
         private async Task<T> PostRequestAsync<T, V>(Uri uri, V request, CancellationToken cancellationToken)
         {
-            var stringContent = new StringContent(JsonSerializer.Serialize(request, new JsonSerializerOptions()
+            using (var stringContent = new StringContent(JsonSerializer.Serialize(request, new JsonSerializerOptions()
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            }), System.Text.Encoding.UTF8, "application/json");
-            stringContent.Headers.TryAddWithoutValidation("User-Agent", BuildUserAgentString());
-
-            var responseMessage = await configuredClient.PostAsync(uri, stringContent, cancellationToken);
-
-            if (!responseMessage.IsSuccessStatusCode)
+            }), System.Text.Encoding.UTF8, "application/json"))
             {
-                if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
+                stringContent.Headers.TryAddWithoutValidation("User-Agent", BuildUserAgentString());
+
+                var responseMessage = await configuredClient.PostAsync(uri, stringContent, cancellationToken);
+
+                if (!responseMessage.IsSuccessStatusCode)
                 {
-                    throw new RelyingPartyAccountConfigurationException("Request is unauthorized for URI " + uri);
+                    if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        throw new RelyingPartyAccountConfigurationException("Request is unauthorized for URI " + uri);
+                    }
+                    else if (responseMessage.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        throw new SmartIdClientException("Server refused the request");
+                    }
+                    else if (responseMessage.StatusCode == (HttpStatusCode)471)
+                    {
+                        throw new NoSuitableAccountOfRequestedTypeFoundException();
+                    }
+                    else if (responseMessage.StatusCode == (HttpStatusCode)472)
+                    {
+                        throw new PersonShouldViewSmartIdPortalException();
+                    }
+                    else if (responseMessage.StatusCode == (HttpStatusCode)480)
+                    {
+                        throw new SmartIdClientException("Client-side API is too old and not supported anymore");
+                    }
+                    else if (responseMessage.StatusCode == (HttpStatusCode)580)
+                    {
+                        throw new ServerMaintenanceException();
+                    }
+                    else if (responseMessage.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        throw new UserAccountNotFoundException();
+                    }
+                    else if (responseMessage.StatusCode == HttpStatusCode.Forbidden)
+                    {
+                        throw new RelyingPartyAccountConfigurationException("No permission to issue the request");
+                    }
                 }
-                else if (responseMessage.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    throw new SmartIdClientException("Server refused the request");
-                }
-                else if (responseMessage.StatusCode == (HttpStatusCode)471)
-                {
-                    throw new NoSuitableAccountOfRequestedTypeFoundException();
-                }
-                else if (responseMessage.StatusCode == (HttpStatusCode)472)
-                {
-                    throw new PersonShouldViewSmartIdPortalException();
-                }
-                else if (responseMessage.StatusCode == (HttpStatusCode)480)
-                {
-                    throw new SmartIdClientException("Client-side API is too old and not supported anymore");
-                }
-                else if (responseMessage.StatusCode == (HttpStatusCode)580)
-                {
-                    throw new ServerMaintenanceException();
-                }
-                else if (responseMessage.StatusCode == HttpStatusCode.NotFound)
-                {
-                    throw new UserAccountNotFoundException();
-                }
-                else if (responseMessage.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    throw new RelyingPartyAccountConfigurationException("No permission to issue the request");
-                }
+
+                responseMessage.EnsureSuccessStatusCode();
+
+                return await JsonSerializer.DeserializeAsync<T>(await responseMessage.Content.ReadAsStreamAsync(), cancellationToken: cancellationToken);
             }
-
-            responseMessage.EnsureSuccessStatusCode();
-
-            return await JsonSerializer.DeserializeAsync<T>(await responseMessage.Content.ReadAsStreamAsync(), cancellationToken: cancellationToken);
         }
 
         private SessionStatusRequest CreateSessionStatusRequest(string sessionId)

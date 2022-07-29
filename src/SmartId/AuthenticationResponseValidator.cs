@@ -243,30 +243,31 @@ namespace SK.SmartId
 
         private bool IsCertificateTrusted(X509Certificate2 certificate)
         {
-            X509Chain verify = new X509Chain();
-
-            verify.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-            verify.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-
-            foreach (X509Certificate2 trustedCACertificate in trustedCACertificates)
+            using (var verify = new X509Chain())
             {
-                verify.ChainPolicy.ExtraStore.Add(trustedCACertificate);
-            }
+                verify.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                verify.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
-            if (verify.Build(certificate))
-            {
-                foreach (var chainElement in verify.ChainElements)
+                foreach (X509Certificate2 trustedCACertificate in trustedCACertificates)
                 {
-                    if (string.Equals(chainElement.Certificate.Thumbprint, certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
+                    verify.ChainPolicy.ExtraStore.Add(trustedCACertificate);
+                }
 
-                    foreach (var trustedCert in verify.ChainPolicy.ExtraStore)
+                if (verify.Build(certificate))
+                {
+                    foreach (var chainElement in verify.ChainElements)
                     {
-                        if (string.Equals(trustedCert.Thumbprint, chainElement.Certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(chainElement.Certificate.Thumbprint, certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
                         {
-                            return true;
+                            continue;
+                        }
+
+                        foreach (var trustedCert in verify.ChainPolicy.ExtraStore)
+                        {
+                            if (string.Equals(trustedCert.Thumbprint, chainElement.Certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
                         }
                     }
                 }
