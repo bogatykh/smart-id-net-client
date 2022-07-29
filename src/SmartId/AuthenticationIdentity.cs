@@ -44,9 +44,6 @@ namespace SK.SmartId
 
         public string Surname { get; set; }
 
-        [Obsolete]
-        public string SurName { get => Surname; set => Surname = value; }
-
         public string IdentityNumber { get; set; }
 
         public string IdentityCode { get => IdentityNumber; set => IdentityNumber = value; }
