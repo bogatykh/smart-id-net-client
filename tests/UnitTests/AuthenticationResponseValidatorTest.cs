@@ -186,12 +186,25 @@ namespace SK.SmartId
 
             using (Stream resource = GetType().Assembly.GetManifestResourceStream("SK.SmartId.Resources.TEST_of_EID-SK_2016.pem.crt"))
             {
-                byte[] buffer = new byte[resource.Length];
-                int r, offset = 0;
-                while ((r = resource.Read(buffer, offset, buffer.Length - offset)) > 0)
-                    offset += r;
+                var tmpFile = Path.GetTempFileName();
 
-                validator.AddTrustedCACertificate(buffer);
+                try
+                {
+                    using (var tmpStream = new FileStream(tmpFile, FileMode.Open))
+                    {
+                        resource.CopyTo(tmpStream);
+                    }
+
+                    validator.AddTrustedCACertificate(tmpFile);
+                }
+                finally
+                {
+                    try
+                    {
+                        File.Delete(tmpFile);
+                    }
+                    catch { }
+                }
             }
 
             Assert.StartsWith("CN=TEST of EID-SK 2016", validator.GetTrustedCACertificates()[0].Subject);
