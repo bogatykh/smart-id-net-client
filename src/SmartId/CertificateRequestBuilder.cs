@@ -313,11 +313,11 @@ namespace SK.SmartId
         {
             ValidateSessionResult(sessionStatus.Result);
             SessionCertificate certificate = sessionStatus.Cert;
-            if (certificate == null || string.IsNullOrWhiteSpace(certificate.Value))
+            if (certificate == null || string.IsNullOrEmpty(certificate.Value))
             {
                 throw new UnprocessableSmartIdResponseException("Certificate was not present in the session status response");
             }
-            if (string.IsNullOrWhiteSpace(sessionStatus.Result.DocumentNumber))
+            if (string.IsNullOrEmpty(sessionStatus.Result.DocumentNumber))
             {
                 throw new UnprocessableSmartIdResponseException("Document number was not present in the session status response");
             }

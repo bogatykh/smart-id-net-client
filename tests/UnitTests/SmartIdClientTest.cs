@@ -509,8 +509,38 @@ namespace SK.SmartId
             SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequest.json", state, "COMPLETE", "STARTED");
             client.SetPollingSleepTimeout(TimeSpan.FromSeconds(2L));
             double duration = await MeasureSigningDurationAsync();
-            Assert.True(duration > 2000L, "Duration is " + duration);
-            Assert.True(duration < 3000L, "Duration is " + duration);
+            Assert.InRange(duration, 2000L, 3000L);
+        }
+
+        [Fact]
+        public async Task CreateSignatureAndGetDeviceIpAddress_noIpAddressReturned()
+        {
+            var state = new SmartIdRestServiceStubs.RequestState()
+            {
+                State = "STARTED"
+            };
+
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequest.json", state, "COMPLETE", "STARTED");
+            SmartIdSignature signature = await CreateSignatureAsync();
+
+            Assert.Null(signature.DeviceIpAddress);
+        }
+
+        [Fact]
+        public async Task CreateSignatureAndGetDeviceIpAddress()
+        {
+            var state = new SmartIdRestServiceStubs.RequestState()
+            {
+                State = "STARTED"
+            };
+
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequestWithDeviceIpAddress.json", state, "COMPLETE", "STARTED");
+            SmartIdSignature signature = await CreateSignatureAsync();
+
+            Assert.Equal("displayTextAndPIN", signature.InteractionFlowUsed);
+            Assert.Equal("62.65.42.46", signature.DeviceIpAddress);
         }
 
         [Fact]
@@ -527,8 +557,7 @@ namespace SK.SmartId
             SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusForSuccessfulCertificateRequest.json", state, "COMPLETE", "STARTED");
             client.SetPollingSleepTimeout(TimeSpan.FromSeconds(2L));
             double duration = await MeasureCertificateChoiceDurationAsync();
-            Assert.True(duration > 2000L, "Duration is " + duration);
-            Assert.True(duration < 3000L, "Duration is " + duration);
+            Assert.InRange(duration, 2000L, 3000L);
         }
 
         [Fact]
@@ -747,6 +776,36 @@ namespace SK.SmartId
             double duration = await MeasureAuthenticationDurationAsync();
             Assert.True(duration > 2000L, "Duration is " + duration);
             Assert.True(duration < 3000L, "Duration is " + duration);
+        }
+
+        [Fact]
+        public async Task getDeviceIpAddress_ipAddressNotPresent()
+        {
+            var state = new SmartIdRestServiceStubs.RequestState()
+            {
+                State = "STARTED"
+            };
+
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusForSuccessfulAuthenticationRequest.json", state, "COMPLETE", "STARTED");
+
+            SmartIdAuthenticationResponse authentication = await CreateAuthenticationAsync();
+            Assert.Null(authentication.DeviceIpAddress);
+        }
+
+        [Fact]
+        public async Task getDeviceIpAddress_ipAddressReturned()
+        {
+            var state = new SmartIdRestServiceStubs.RequestState()
+            {
+                State = "STARTED"
+            };
+
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
+            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusForSuccessfulAuthenticationRequestWithDeviceIpAddress.json", state, "COMPLETE", "STARTED");
+
+            SmartIdAuthenticationResponse authentication = await CreateAuthenticationAsync();
+            Assert.Equal("62.65.42.45", authentication.DeviceIpAddress);
         }
 
         [Fact]

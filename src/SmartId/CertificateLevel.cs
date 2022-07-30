@@ -41,7 +41,7 @@ namespace SK.SmartId
 
         public CertificateLevel(string certificateLevel)
         {
-            this.certificateLevel = certificateLevel;
+            this.certificateLevel = certificateLevel ?? throw new ArgumentException("certificateLevel cannot be null", nameof(certificateLevel));
         }
 
         public bool IsEqualOrAbove(string certificateLevel)

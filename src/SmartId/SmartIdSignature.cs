@@ -24,13 +24,27 @@
  * #L%
  */
 
+using SK.SmartId.Exceptions;
 using System;
 
 namespace SK.SmartId
 {
     public class SmartIdSignature
     {
-        public byte[] Value => Convert.FromBase64String(ValueInBase64);
+        public byte[] Value
+        {
+            get
+            {
+                try
+                {
+                    return Convert.FromBase64String(ValueInBase64);
+                }
+                catch (FormatException)
+                {
+                    throw new UnprocessableSmartIdResponseException("Failed to parse signature value in base64. Probably incorrectly encoded base64 string: '" + ValueInBase64);
+                }
+            }
+        }
 
         public string ValueInBase64 { get; set; }
 
@@ -39,5 +53,14 @@ namespace SK.SmartId
         public string DocumentNumber { get; set; }
 
         public string InteractionFlowUsed { get; set; }
+
+        /// <summary>
+        /// IP address of the device running the App.
+        /// <para>
+        /// IP address of the device running Smart-id app (or null if not returned)
+        /// </para>
+        /// </summary>
+        /// <remarks>Present only for subscribed RPs and when available (e.g. not present in case state is TIMEOUT).</remarks>
+        public string DeviceIpAddress { get; set; }
     }
 }

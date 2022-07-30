@@ -24,6 +24,8 @@
  * #L%
  */
 
+using SK.SmartId.Exceptions;
+using System;
 using System.Security.Cryptography;
 
 namespace SK.SmartId
@@ -32,11 +34,18 @@ namespace SK.SmartId
     {
         public static byte[] CalculateDigest(byte[] dataToDigest, HashType hashType)
         {
-            var algorithmName = hashType.AlgorithmName;
-
-            using (var hashAlg = HashAlgorithm.Create(algorithmName.Name))
+            try
             {
-                return hashAlg.ComputeHash(dataToDigest);
+                var algorithmName = hashType.AlgorithmName;
+
+                using (var hashAlg = HashAlgorithm.Create(algorithmName.Name))
+                {
+                    return hashAlg.ComputeHash(dataToDigest);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new UnprocessableSmartIdResponseException("Problem with digest calculation. " + e);
             }
         }
     }

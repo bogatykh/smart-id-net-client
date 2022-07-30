@@ -325,7 +325,8 @@ namespace SK.SmartId
                 RequestedCertificateLevel = CertificateLevel,
                 CertificateLevel = certificate.CertificateLevel,
                 DocumentNumber = sessionResult.DocumentNumber,
-                InteractionFlowUsed = sessionStatus.InteractionFlowUsed
+                InteractionFlowUsed = sessionStatus.InteractionFlowUsed,
+                DeviceIpAddress = sessionStatus.DeviceIpAddress
             };
 
             return authenticationResponse;

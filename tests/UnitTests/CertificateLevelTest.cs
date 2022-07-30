@@ -76,10 +76,9 @@ namespace SK.SmartId
         }
 
         [Fact]
-        public void testBothCertLevelUnknown()
+        public void certificateLevel_nullArgumentToConstructor()
         {
-            CertificateLevel certificateLevel = new CertificateLevel("SOME UNKNOWN LEVEL");
-            Assert.True(certificateLevel.IsEqualOrAbove("SOME UNKNOWN LEVEL"));
+            Assert.Throws<ArgumentException>("certificateLevel", () => new CertificateLevel(null));
         }
     }
 }

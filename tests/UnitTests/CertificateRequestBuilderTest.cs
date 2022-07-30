@@ -217,7 +217,7 @@ namespace SK.SmartId
         [Fact]
         public async Task getCertificate_withCertificateResponseWithBlankDocumentNumber_shouldThrowException()
         {
-            connector.sessionStatusToRespond.Result.DocumentNumber = " ";
+            connector.sessionStatusToRespond.Result.DocumentNumber = "";
             await Assert.ThrowsAsync<UnprocessableSmartIdResponseException>(MakeCertificateRequest);
         }
 

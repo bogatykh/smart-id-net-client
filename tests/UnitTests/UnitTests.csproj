@@ -77,6 +77,12 @@
     <None Update="Resources\requests\signingRequest_verificationCodeChoice_fallbackTo_displayTextAndPIN.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Resources\responses\sessionStatusForSuccessfulSigningRequestWithDeviceIpAddress.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\responses\sessionStatusForSuccessfulAuthenticationRequestWithDeviceIpAddress.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Resources\responses\authenticationSessionResponse.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

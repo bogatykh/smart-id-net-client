@@ -50,7 +50,7 @@ namespace SK.SmartId
 
         public string Country { get; set; }
 
-        public X509Certificate2 AuthCertificate { get; set; }
+        public X509Certificate2 AuthCertificate { get; }
 
         public DateTime? DateOfBirth { get; set; }
     }

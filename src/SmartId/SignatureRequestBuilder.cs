@@ -339,7 +339,8 @@ namespace SK.SmartId
                 ValueInBase64 = sessionSignature.Value,
                 AlgorithmName = sessionSignature.Algorithm,
                 DocumentNumber = sessionStatus.Result.DocumentNumber,
-                InteractionFlowUsed = sessionStatus.InteractionFlowUsed
+                InteractionFlowUsed = sessionStatus.InteractionFlowUsed,
+                DeviceIpAddress = sessionStatus.DeviceIpAddress
             };
             return signature;
         }

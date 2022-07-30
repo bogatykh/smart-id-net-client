@@ -47,5 +47,15 @@ namespace SK.SmartId.Rest.Dao
 
         [JsonPropertyName("interactionFlowUsed")]
         public string InteractionFlowUsed { get; set; }
+
+        /// <summary>
+        /// IP address of the device running the App.
+        /// <para>
+        /// IP address of the device running Smart-id app (or null if not returned)
+        /// </para>
+        /// </summary>
+        /// <remarks>Present only for subscribed RPs and when available (e.g. not present in case state is TIMEOUT).</remarks>
+        [JsonPropertyName("deviceIpAddress")]
+        public string DeviceIpAddress { get; set; }
     }
 }
