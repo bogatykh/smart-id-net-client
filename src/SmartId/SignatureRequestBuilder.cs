@@ -76,185 +76,185 @@ namespace SK.SmartId
         {
         }
 
-        /**
-         * Sets the request's UUID of the relying party
-         * <para>
-         * If not for explicit need, it is recommended to use
-         * {@link ee.sk.smartid.SmartIdClient#setRelyingPartyUUID(String)}
-         * instead. In that case when getting the builder from
-         * {@link ee.sk.smartid.SmartIdClient} it is not required
-         * to set the UUID every time when building a new request.
-         *
-         * @param relyingPartyUUID UUID of the relying party
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's UUID of the relying party
+        /// <para>
+        /// If not for explicit need, it is recommended to use
+        /// <see cref="SmartIdClient.RelyingPartyUUID"/>
+        /// instead. In that case when getting the builder from
+        /// <see cref="SmartIdClient"/> it is not required
+        /// to set the UUID every time when building a new request.
+        /// </para>
+        /// </summary>
+        /// <param name="relyingPartyUUID">UUID of the relying party</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithRelyingPartyUUID(string relyingPartyUUID)
         {
             RelyingPartyUUID = relyingPartyUUID;
             return this;
         }
 
-        /**
-         * Sets the request's name of the relying party
-         * <para>
-         * If not for explicit need, it is recommended to use
-         * {@link ee.sk.smartid.SmartIdClient#setRelyingPartyName(String)}
-         * instead. In that case when getting the builder from
-         * {@link ee.sk.smartid.SmartIdClient} it is not required
-         * to set name every time when building a new request.
-         *
-         * @param relyingPartyName name of the relying party
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's name of the relying party
+        /// <para>
+        /// If not for explicit need, it is recommended to use
+        /// <see cref="SmartIdClient.RelyingPartyName"/>
+        /// instead. In that case when getting the builder from
+        /// <see cref="SmartIdClient"/> it is not required
+        /// to set name every time when building a new request.
+        /// </para>
+        /// </summary>
+        /// <param name="relyingPartyName">name of the relying party</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithRelyingPartyName(string relyingPartyName)
         {
             RelyingPartyName = relyingPartyName;
             return this;
         }
 
-        /**
-         * Sets the request's document number
-         * <para>
-         * Document number is unique for the user's certificate/device
-         * that is used for the signing.
-         *
-         * @param documentNumber document number of the certificate/device used to sign
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's document number
+        /// <para>
+        /// Document number is unique for the user's certificate/device
+        /// that is used for the authentication.
+        /// </para>
+        /// </summary>
+        /// <param name="documentNumber">document number of the certificate/device used to sign</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithDocumentNumber(string documentNumber)
         {
             DocumentNumber = documentNumber;
             return this;
         }
 
-        /**
-         * Sets the request's personal semantics identifier
-         * <para>
-         * Semantics identifier consists of identity type, country code, a hyphen and the identifier.
-         *
-         * @param semanticsIdentifierAsString semantics identifier for a person
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's personal semantics identifier
+        /// <para>
+        /// Semantics identifier consists of identity type, country code, a hyphen and the identifier.
+        /// </para>
+        /// </summary>
+        /// <param name="semanticsIdentifierAsString">semantics identifier for a person</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithSemanticsIdentifierAsString(string semanticsIdentifierAsString)
         {
             SemanticsIdentifier = new SemanticsIdentifier(semanticsIdentifierAsString);
             return this;
         }
 
-        /**
-         * Sets the request's personal semantics identifier
-         * <para>
-         * Semantics identifier consists of identity type, country code, and the identifier.
-         *
-         * @param semanticsIdentifier semantics identifier for a person
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's personal semantics identifier
+        /// <para>
+        /// Semantics identifier consists of identity type, country code, and the identifier.
+        /// </para>
+        /// </summary>
+        /// <param name="semanticsIdentifier">semantics identifier for a person</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithSemanticsIdentifier(SemanticsIdentifier semanticsIdentifier)
         {
             SemanticsIdentifier = semanticsIdentifier;
             return this;
         }
 
-        /**
-         * Sets the data of the document to be signed
-         * <para>
-         * This method could be used when the data
-         * to be signed is not in hashed format.
-         * {@link ee.sk.smartid.SignableData#setHashType(HashType)}
-         * can be used to select the wanted hash type
-         * and the data is hashed for you.
-         *
-         * @param dataToSign dat to be signed
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the data of the document to be signed
+        /// <para>
+        /// This method could be used when the data
+        /// to be signed is not in hashed format.
+        /// <see cref="SignableData.HashType"/>
+        /// can be used to select the wanted hash type
+        /// and the data is hashed for you.
+        /// <see cref="AuthenticationHash.GenerateRandomHash"/>
+        /// </para>
+        /// </summary>
+        /// <param name="dataToSign">data to be signed</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithSignableData(SignableData dataToSign)
         {
             base.dataToSign = dataToSign;
             return this;
         }
 
-        /**
-         * Sets the hash to be signed
-         * <para>
-         * This method could be used when the data
-         * to be signed is in hashed format.
-         *
-         * @param hashToSign hash to be signed
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the hash to be signed
+        /// <para>
+        /// This method could be used when the data
+        /// to be signed is in hashed format.
+        /// </para>
+        /// </summary>
+        /// <param name="hashToSign">hash to be signed</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithSignableHash(SignableHash hashToSign)
         {
             base.hashToSign = hashToSign;
             return this;
         }
 
-        /**
-         * Sets the request's certificate level
-         * <para>
-         * Defines the minimum required level of the certificate.
-         * Optional. When not set, it defaults to what is configured
-         * on the server side i.e. "QUALIFIED".
-         *
-         * @param certificateLevel the level of the certificate
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's certificate level
+        /// <para>
+        /// Defines the minimum required level of the certificate.
+        /// Optional. When not set, it defaults to what is configured
+        /// on the server side i.e. "QUALIFIED".
+        /// </para>
+        /// </summary>
+        /// <param name="certificateLevel">the level of the certificate</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithCertificateLevel(string certificateLevel)
         {
             CertificateLevel = certificateLevel;
             return this;
         }
 
-        /**
-         * Sets the request's nonce
-         * <para>
-         * By default the signature's initiation request
-         * has idempotent behaviour meaning when the request
-         * is repeated inside a given time frame with exactly
-         * the same parameters, session ID of an existing session
-         * can be returned as a result. When requester wants, it can
-         * override the idempotent behaviour inside of this time frame
-         * using an optional "nonce" parameter present for all POST requests.
-         * <para>
-         * Normally, this parameter can be omitted.
-         *
-         * @param nonce nonce of the request
-         * @return this builder
-         */
+        /// <summary>
+        /// Sets the request's nonce
+        /// <para>
+        /// By default the authentication's initiation request
+        /// has idempotent behaviour meaning when the request
+        /// is repeated inside a given time frame with exactly
+        /// the same parameters, session ID of an existing session
+        /// can be returned as a result.When requester wants, it can
+        /// override the idempotent behaviour inside of this time frame
+        /// using an optional "nonce" parameter present for all POST requests.
+        /// </para>
+        /// <para>
+        /// Normally, this parameter can be omitted.
+        /// </para>
+        /// </summary>
+        /// <param name="nonce">nonce of the request</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithNonce(string nonce)
         {
             Nonce = nonce;
             return this;
         }
 
-        /**
-         * Specifies capabilities of the user
-         * <para>
-         * By default there are no specified capabilities.
-         * The capabilities need to be specified in case of
-         * a restricted Smart ID user
-         * {@link #withCapabilities(String...)}
-         * @param capabilities are specified capabilities for a restricted Smart ID user
-         *                     and is one of [QUALIFIED, ADVANCED]
-         * @return this builder
-         */
+        /// <summary>
+        /// Specifies capabilities of the user
+        /// <para>
+        /// By default there are no specified capabilities.
+        /// The capabilities need to be specified in case of
+        /// a restricted Smart ID user
+        /// <see cref="WithCapabilities(string[])"/>
+        /// </para>
+        /// </summary>
+        /// <param name="capabilities">are specified capabilities for a restricted Smart ID user and is one of [QUALIFIED, ADVANCED]</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithCapabilities(params Capability[] capabilities)
         {
             this.capabilities = new HashSet<string>(capabilities.Select(x => x.ToString()));
             return this;
         }
 
-        /**
-         * Specifies capabilities of the user
-         * <para>
-         *
-         * By default there are no specified capabilities.
-         * The capabilities need to be specified in case of
-         * a restricted Smart ID user
-         * {@link #withCapabilities(Capability...)}
-         * @param capabilities are specified capabilities for a restricted Smart ID user
-         *                     and is one of ["QUALIFIED", "ADVANCED"]
-         * @return this builder
-         */
+        /// <summary>
+        /// Specifies capabilities of the user
+        /// <para>
+        /// By default there are no specified capabilities.
+        /// The capabilities need to be specified in case of
+        /// a restricted Smart ID user
+        /// <see cref="WithCapabilities(Capability[])"/>
+        /// </summary>
+        /// <param name="capabilities">are specified capabilities for a restricted Smart ID user and is one of ["QUALIFIED", "ADVANCED"]</param>
+        /// <returns>this builder</returns>
         public SignatureRequestBuilder WithCapabilities(params string[] capabilities)
         {
             this.capabilities = new HashSet<string>(capabilities);

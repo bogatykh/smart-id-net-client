@@ -264,9 +264,9 @@ namespace SK.SmartId
         /// <remarks>This method uses automatic session status polling internally and therefore blocks the current thread until certificate choice is concluded/interupted etc.</remarks>
         /// <param name="sessionStatus">session status response</param>
         /// <returns>the authentication response</returns>
-        /// <exception cref="UserRefusedException when the user has refused the session. NB! This exception has subclasses to determine the screen where user pressed cancel.
-        /// <exception cref="SessionTimeoutException when there was a timeout, i.e. end user did not confirm or refuse the operation within given timeframe
-        /// <exception cref="DocumentUnusableException when for some reason, this relying party request cannot be completed.
+        /// <exception cref="Exceptions.UserActions.UserRefusedException">when the user has refused the session. NB! This exception has subclasses to determine the screen where user pressed cancel.</exception>
+        /// <exception cref="Exceptions.UserActions.SessionTimeoutException">when there was a timeout, i.e. end user did not confirm or refuse the operation within given timeframe</exception>
+        /// <exception cref="Exceptions.UserAccounts.DocumentUnusableException">when for some reason, this relying party request cannot be completed.</exception>
         public SmartIdCertificate CreateSmartIdCertificate(SessionStatus sessionStatus)
         {
             ValidateCertificateResponse(sessionStatus);
