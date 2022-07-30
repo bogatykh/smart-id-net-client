@@ -752,6 +752,7 @@ namespace SK.SmartId
         [Fact]
         public void VerifySmartIdConnector_whenConnectorIsNotProvided()
         {
+            client.SetConfiguredClient(null);
             ISmartIdConnector smartIdConnector = client.SmartIdConnector;
             Assert.True(smartIdConnector is SmartIdRestConnector);
         }
