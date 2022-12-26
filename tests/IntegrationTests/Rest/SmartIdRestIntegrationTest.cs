@@ -38,8 +38,8 @@ namespace SK.SmartId.IntegrationTests.Rest
     {
         private const string RELYING_PARTY_UUID = "00000000-0000-0000-0000-000000000000";
         private const string RELYING_PARTY_NAME = "DEMO";
-        private const string DOCUMENT_NUMBER = "PNOLT-30303039903-FMB7-Q";
-        private const string DOCUMENT_NUMBER_LT = "PNOLT-30303039914-PBZK-Q";
+        private const string DOCUMENT_NUMBER = "PNOLT-30303039903-MOCK-Q";
+        private const string DOCUMENT_NUMBER_LT = "PNOLT-30303039914-MOCK-Q";
         private const string DATA_TO_SIGN = "Hello World!";
         private const string CERTIFICATE_LEVEL_QUALIFIED = "QUALIFIED";
         private readonly ISmartIdConnector connector;
