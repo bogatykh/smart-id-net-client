@@ -76,7 +76,7 @@ namespace SK.SmartId.Util
                 return null;
             }
 
-            foreach (DerSequence param in (Asn1Sequence)Asn1Sequence.FromByteArray(extensionValue.GetOctets()))
+            foreach (Asn1Sequence param in (Asn1Sequence)Asn1Object.FromByteArray(extensionValue.GetOctets()))
             {
                 foreach (var val in param)
                 {
@@ -84,7 +84,7 @@ namespace SK.SmartId.Util
                     {
                         DerSet x = (DerSet)param[1];
 
-                        DerGeneralizedTime time = (DerGeneralizedTime)x[0];
+                        Asn1GeneralizedTime time = (Asn1GeneralizedTime)x[0];
                         return time.ToDateTime();
                     }
                 }
