@@ -157,6 +157,59 @@ namespace SK.SmartId
         }
 
         [Fact]
+        public async Task authenticate_withShareMdClientIpAddressTrue()
+        {
+            AuthenticationHash authenticationHash = AuthenticationHash.GenerateRandomHash();
+
+            SmartIdAuthenticationResponse authenticationResponse = await builder
+                .WithRelyingPartyUUID("relying-party-uuid")
+                .WithRelyingPartyName("relying-party-name")
+                .WithCertificateLevel("QUALIFIED")
+                .WithAuthenticationHash(authenticationHash)
+                .WithDocumentNumber("PNOEE-31111111111")
+                .WithAllowedInteractionsOrder(new List<Interaction> { Interaction.DisplayTextAndPIN("Log in to internet bank?") })
+                .WithShareMdClientIpAddress(true)
+                .AuthenticateAsync();
+
+            Assert.False(connector.authenticationSessionRequestUsed.RequestProperties is null,
+                "getRequestProperties must be set withShareMdClientIpAddress");
+
+            Assert.True(connector.authenticationSessionRequestUsed.RequestProperties.ShareMdClientIpAddress,
+                "requestProperties.shareMdClientIpAddress must be true");
+
+            AssertCorrectAuthenticationRequestMadeWithDocumentNumber(authenticationHash.HashInBase64, "QUALIFIED");
+            AssertCorrectSessionRequestMade();
+            AssertAuthenticationResponseCorrect(authenticationResponse, authenticationHash.HashInBase64);
+        }
+
+        [Fact]
+        public async Task authenticate_withShareMdClientIpAddressFalse()
+        {
+            AuthenticationHash authenticationHash = AuthenticationHash.GenerateRandomHash();
+
+            SmartIdAuthenticationResponse authenticationResponse = await builder
+                .WithRelyingPartyUUID("relying-party-uuid")
+                .WithRelyingPartyName("relying-party-name")
+                .WithCertificateLevel("QUALIFIED")
+                .WithAuthenticationHash(authenticationHash)
+                .WithDocumentNumber("PNOEE-31111111111")
+                .WithAllowedInteractionsOrder(new List<Interaction> { Interaction.DisplayTextAndPIN("Log in to internet bank?") })
+                .WithShareMdClientIpAddress(false)
+                .AuthenticateAsync();
+
+            AssertCorrectAuthenticationRequestMadeWithDocumentNumber(authenticationHash.HashInBase64, "QUALIFIED");
+
+            Assert.False(connector.authenticationSessionRequestUsed.RequestProperties is null,
+                "getRequestProperties must be set withShareMdClientIpAddress");
+
+            Assert.False(connector.authenticationSessionRequestUsed.RequestProperties.ShareMdClientIpAddress,
+                "requestProperties.shareMdClientIpAddress must be false");
+
+            AssertCorrectSessionRequestMade();
+            AssertAuthenticationResponseCorrect(authenticationResponse, authenticationHash.HashInBase64);
+        }
+
+        [Fact]
         public async Task authenticate_withoutDocumentNumber_withoutSemanticsIdentifier_shouldThrowException()
         {
             AuthenticationHash authenticationHash = new AuthenticationHash
@@ -576,7 +629,8 @@ namespace SK.SmartId
                 Result = DummyData.createSessionEndResult(),
                 Signature = signature,
                 Cert = certificate,
-                InteractionFlowUsed = "displayTextAndPIN"
+                InteractionFlowUsed = "displayTextAndPIN",
+                DeviceIpAddress = "4.4.4.4"
             };
             return status;
         }

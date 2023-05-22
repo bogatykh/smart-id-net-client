@@ -64,8 +64,8 @@ namespace SK.SmartId
         }
 
         /// <summary>
-        /// Validates the authentication response and returns the its result
-        /// <para>Performs following validations:</para>
+        /// Validates the authentication response and returns the result.
+        /// <para>Performs the following validations:</para>
         /// <list type="bullet">
         ///     <item>"result.endResult" has the value "OK"</item>
         ///     <item>"signature.value" is the valid signature over the same "hash", which was submitted by the RP.</item>
@@ -106,7 +106,7 @@ namespace SK.SmartId
         /// Gets the list of trusted CA certificates
         /// <para>
         /// Authenticating person's certificate has to be issued by
-        /// one of the trusted CA certificates.Otherwise the person's
+        /// one of the trusted CA certificates. Otherwise, the person's
         /// authentication is deemed untrusted and therefore not valid.
         /// </para>
         /// </summary>
@@ -120,7 +120,7 @@ namespace SK.SmartId
         /// Adds a certificate to the list of trusted CA certificates
         /// <para>
         /// Authenticating person's certificate has to be issued by
-        /// one of the trusted CA certificates. Otherwise the person's
+        /// one of the trusted CA certificates. Otherwise, the person's
         /// authentication is deemed untrusted and therefore not valid.
         /// </para>
         /// </summary>
@@ -135,7 +135,7 @@ namespace SK.SmartId
         /// adds it into the list of trusted CA certificates
         /// <para>
         /// Authenticating person's certificate has to be issued by
-        /// one of the trusted CA certificates. Otherwise the person's
+        /// one of the trusted CA certificates. Otherwise, the person's
         /// authentication is deemed untrusted and therefore not valid.
         /// </para>
         /// </summary>
@@ -149,7 +149,7 @@ namespace SK.SmartId
 
         /// <summary>
         /// Constructs a certificate from the file and adds it into the list of trusted CA certificates
-        /// <para>Authenticating person's certificate has to be issued by one of the trusted CA certificates. Otherwise the person's authentication is deemed untrusted and therefore not valid.</para>
+        /// <para>Authenticating person's certificate has to be issued by one of the trusted CA certificates. Otherwise, the person's authentication is deemed untrusted and therefore not valid.</para>
         /// </summary>
         /// <param name="certificateFile">trusted CA certificate</param>
         /// <exception cref="CertificateException">when there is an error constructing the certificate from the bytes of the file</exception>

@@ -54,5 +54,9 @@ namespace SK.SmartId.Rest.Dao
 
         [JsonPropertyName("allowedInteractionsOrder")]
         public List<Interaction> AllowedInteractionsOrder { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("requestProperties")]
+        public RequestProperties RequestProperties { get; set; }
     }
 }

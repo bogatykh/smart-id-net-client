@@ -95,7 +95,7 @@ namespace SK.SmartId
         }
 
         [Fact]
-        public async Task signWithoutCertificateLevel_shouldPass()
+        public async Task sign_withoutCertificateLevel()
         {
             SignableHash hashToSign = new SignableHash();
             hashToSign.HashInBase64 = "jsflWgpkVcWOyICotnVn5lazcXdaIWvcvNOWTYPceYQ=";
@@ -111,6 +111,66 @@ namespace SK.SmartId
                 .SignAsync();
 
             assertCorrectSignatureRequestMade(null);
+            assertCorrectSessionRequestMade();
+            assertSignatureCorrect(signature);
+        }
+
+        [Fact]
+        public async Task sign_withShareMdClientIpAddressTrue()
+        {
+            SignableHash hashToSign = new SignableHash();
+            hashToSign.HashInBase64 = "jsflWgpkVcWOyICotnVn5lazcXdaIWvcvNOWTYPceYQ=";
+            hashToSign.HashType = HashType.SHA256;
+
+            SmartIdSignature signature = await builder
+                .WithRelyingPartyUUID("relying-party-uuid")
+                .WithRelyingPartyName("relying-party-name")
+                .WithSignableHash(hashToSign)
+                .WithDocumentNumber("PNOEE-31111111111")
+                .WithCertificateLevel("QUALIFIED")
+                .WithAllowedInteractionsOrder(new List<Interaction>{Interaction.ConfirmationMessageAndVerificationCodeChoice("Sign the contract?"),
+                        Interaction.VerificationCodeChoice("Sign hash?") })
+                .WithShareMdClientIpAddress(true)
+                .SignAsync();
+
+            assertCorrectSignatureRequestMade("QUALIFIED");
+
+            Assert.False(connector.signatureSessionRequestUsed.RequestProperties is null,
+                "getRequestProperties must be set withShareMdClientIpAddress");
+
+            Assert.True(connector.signatureSessionRequestUsed.RequestProperties.ShareMdClientIpAddress,
+                "requestProperties.shareMdClientIpAddress must be true");
+
+            assertCorrectSessionRequestMade();
+            assertSignatureCorrect(signature);
+        }
+
+        [Fact]
+        public async Task sign_withShareMdClientIpAddressFalse()
+        {
+            SignableHash hashToSign = new SignableHash();
+            hashToSign.HashInBase64 = "jsflWgpkVcWOyICotnVn5lazcXdaIWvcvNOWTYPceYQ=";
+            hashToSign.HashType = HashType.SHA256;
+
+            SmartIdSignature signature = await builder
+                    .WithRelyingPartyUUID("relying-party-uuid")
+                    .WithRelyingPartyName("relying-party-name")
+                    .WithSignableHash(hashToSign)
+                    .WithDocumentNumber("PNOEE-31111111111")
+                    .WithCertificateLevel("QUALIFIED")
+                    .WithAllowedInteractionsOrder(new List<Interaction>{Interaction.ConfirmationMessageAndVerificationCodeChoice("Sign the contract?"),
+                            Interaction.VerificationCodeChoice("Sign hash?") })
+                    .WithShareMdClientIpAddress(false)
+                    .SignAsync();
+
+            assertCorrectSignatureRequestMade("QUALIFIED");
+
+            Assert.False(connector.signatureSessionRequestUsed.RequestProperties is null,
+                "getRequestProperties must be set withShareMdClientIpAddress");
+
+            Assert.False(connector.signatureSessionRequestUsed.RequestProperties.ShareMdClientIpAddress,
+                "requestProperties.shareMdClientIpAddress must be false");
+
             assertCorrectSessionRequestMade();
             assertSignatureCorrect(signature);
         }
@@ -259,7 +319,7 @@ namespace SK.SmartId
             );
             Assert.Equal("Nonce cannot be longer that 30 chars. You supplied: 'THIS_IS_LONGER_THAN_ALLOWED_30_CHARS_0123456789012345678901234567890'", exception.Message);
         }
-        
+
         [Fact]
         public async Task authenticate_displayTextAndPinTextTooLong_shouldThrowException()
         {

@@ -239,7 +239,7 @@ namespace SK.SmartId
         /// <summary>
         /// Specifies capabilities of the user
         /// <para>
-        /// By default there are no specified capabilities.
+        /// By default, there are no specified capabilities.
         /// The capabilities need to be specified in case of
         /// a restricted Smart ID user
         /// <see cref="WithCapabilities(Capability[])"/>
@@ -257,6 +257,16 @@ namespace SK.SmartId
         public AuthenticationRequestBuilder WithAllowedInteractionsOrder(List<Interaction> allowedInteractionsOrder)
         {
             this.allowedInteractionsOrder = allowedInteractionsOrder;
+            return this;
+        }
+
+        /// <summary>
+        /// Ask to return the IP address of the mobile device where Smart-ID app was running.
+        /// <see href="https://github.com/SK-EID/smart-id-documentation#238-mobile-device-ip-sharing">Mobile Device IP sharing</see>
+        /// <returns>this builder</returns>
+        public AuthenticationRequestBuilder WithShareMdClientIpAddress(bool shareMdClientIpAddress)
+        {
+            this.shareMdClientIpAddress = shareMdClientIpAddress;
             return this;
         }
 
@@ -376,6 +386,16 @@ namespace SK.SmartId
                 Capabilities = Capabilities,
                 AllowedInteractionsOrder = AllowedInteractionsOrder
             };
+
+            RequestProperties requestProperties = new RequestProperties()
+            {
+                ShareMdClientIpAddress = this.shareMdClientIpAddress
+            };
+            if (requestProperties.HasProperties)
+            {
+                request.RequestProperties = requestProperties;
+            }
+
             return request;
         }
     }

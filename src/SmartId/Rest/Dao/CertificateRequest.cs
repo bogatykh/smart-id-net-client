@@ -45,5 +45,9 @@ namespace SK.SmartId.Rest.Dao
 
         [JsonPropertyName("capabilities")]
         public HashSet<string> Capabilities { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("requestProperties")]
+        public RequestProperties RequestProperties { get; set; }
     }
 }

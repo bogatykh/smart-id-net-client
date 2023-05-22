@@ -48,13 +48,16 @@ namespace SK.SmartId.Rest.Dao
         [JsonPropertyName("interactionFlowUsed")]
         public string InteractionFlowUsed { get; set; }
 
-        /// <summary>
-        /// IP address of the device running the App.
-        /// <para>
-        /// IP address of the device running Smart-id app (or null if not returned)
-        /// </para>
-        /// </summary>
-        /// <remarks>Present only for subscribed RPs and when available (e.g. not present in case state is TIMEOUT).</remarks>
+  /**
+   * IP-address of the device running the App.
+   *
+   * Present only if withShareMdClientIpAddress() was specified with the request
+   * Also, the RelyingParty must be subscribed for the service.
+   * Also, the data must be available (e.g. not present in case state is TIMEOUT).
+   * @see <a href="https://github.com/SK-EID/smart-id-documentation#238-mobile-device-ip-sharing">Mobile Device IP sharing</a>
+   *
+   * @return IP address of the device running Smart-ID app (or null if not returned)
+   */
         [JsonPropertyName("deviceIpAddress")]
         public string DeviceIpAddress { get; set; }
     }

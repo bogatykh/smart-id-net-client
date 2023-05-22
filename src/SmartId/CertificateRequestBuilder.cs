@@ -226,6 +226,16 @@ namespace SK.SmartId
         }
 
         /// <summary>
+        /// Ask to return the IP address of the mobile device where Smart-ID app was running.
+        /// <see href="https://github.com/SK-EID/smart-id-documentation#238-mobile-device-ip-sharing">Mobile Device IP sharing</see>
+        /// <returns>this builder</returns>
+        public CertificateRequestBuilder WithShareMdClientIpAddress(bool shareMdClientIpAddress)
+        {
+            this.shareMdClientIpAddress = shareMdClientIpAddress;
+            return this;
+        }
+
+        /// <summary>
         /// Send the certificate choice request and get the response
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -275,8 +285,10 @@ namespace SK.SmartId
             {
                 Certificate = CertificateParser.ParseX509Certificate(certificate.Value),
                 CertificateLevel = certificate.CertificateLevel,
-                DocumentNumber = GetDocumentNumber(sessionStatus)
+                DocumentNumber = GetDocumentNumber(sessionStatus),
+                DeviceIpAddress = sessionStatus.DeviceIpAddress
             };
+
             return smartIdCertificate;
         }
 
@@ -306,6 +318,14 @@ namespace SK.SmartId
                 Nonce = Nonce,
                 Capabilities = Capabilities
             };
+            RequestProperties requestProperties = new RequestProperties()
+            {
+                ShareMdClientIpAddress = this.shareMdClientIpAddress
+            };
+            if (requestProperties.HasProperties)
+            {
+                request.RequestProperties = requestProperties;
+            }
             return request;
         }
 

@@ -42,6 +42,7 @@ namespace SK.SmartId
         protected SignableHash hashToSign;
         protected HashSet<string> capabilities;
         protected List<Interaction> allowedInteractionsOrder;
+        protected bool? shareMdClientIpAddress;
 
         protected SmartIdRequestBuilder(ISmartIdConnector connector, SessionStatusPoller sessionStatusPoller)
         {

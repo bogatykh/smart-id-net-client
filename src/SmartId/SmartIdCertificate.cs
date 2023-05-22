@@ -35,5 +35,7 @@ namespace SK.SmartId
         public string DocumentNumber { get; set; }
 
         public string CertificateLevel { get; set; }
+
+        public string DeviceIpAddress { get; set; }
     }
 }

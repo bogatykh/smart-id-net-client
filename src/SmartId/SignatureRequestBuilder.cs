@@ -261,6 +261,16 @@ namespace SK.SmartId
             return this;
         }
 
+        /// <summary>
+        /// Ask to return the IP address of the mobile device where Smart-ID app was running.
+        /// <see href="https://github.com/SK-EID/smart-id-documentation#238-mobile-device-ip-sharing">Mobile Device IP sharing</see>
+        /// <returns>this builder</returns>
+        public SignatureRequestBuilder WithShareMdClientIpAddress(bool shareMdClientIpAddress)
+        {
+            this.shareMdClientIpAddress = shareMdClientIpAddress;
+            return this;
+        }
+
         /// <param name="allowedInteractionsOrder">
         /// Preferred order of what dialog to present to user. What actually gets displayed depends on user's device and its software version.
         /// First option from this list that the device is capable of handling is displayed to the user.
@@ -373,6 +383,14 @@ namespace SK.SmartId
                 Capabilities = Capabilities,
                 AllowedInteractionsOrder = AllowedInteractionsOrder
             };
+            RequestProperties requestProperties = new RequestProperties()
+            {
+                ShareMdClientIpAddress = this.shareMdClientIpAddress
+            };
+            if (requestProperties.HasProperties)
+            {
+                request.RequestProperties = requestProperties;
+            }
             return request;
         }
     }

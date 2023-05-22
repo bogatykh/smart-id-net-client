@@ -96,7 +96,7 @@ namespace SK.SmartId
         }
 
         [Fact]
-        public async Task getCertificateWithoutCertificateLevel_shouldPass()
+        public async Task getCertificate_withoutCertificateLevel()
         {
             SmartIdCertificate certificate = await builder
                 .WithRelyingPartyUUID("relying-party-uuid")
@@ -106,6 +106,49 @@ namespace SK.SmartId
             AssertCertificateResponseValid(certificate);
             AssertCorrectSessionRequestMade();
             AssertValidCertificateChoiceRequestMade(null);
+        }
+
+        [Fact]
+        public async Task getCertificate_withShareMdClientIpAddressTrue()
+        {
+            SmartIdCertificate certificate = await builder
+                .WithRelyingPartyUUID("relying-party-uuid")
+                .WithRelyingPartyName("relying-party-name")
+                .WithSemanticsIdentifier(new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, SemanticsIdentifier.CountryCode.EE, "31111111111"))
+                .WithCertificateLevel("ADVANCED")
+                .WithShareMdClientIpAddress(true)
+                .FetchAsync();
+            AssertCertificateResponseValid(certificate);
+
+            Assert.False(connector.certificateRequestUsed.RequestProperties is null,
+                "getRequestProperties must be set withShareMdClientIpAddress");
+            Assert.True(connector.certificateRequestUsed.RequestProperties.ShareMdClientIpAddress,
+                "requestProperties.shareMdClientIpAddress must be true");
+            Assert.Equal("5.5.5.5", certificate.DeviceIpAddress);
+
+            AssertCorrectSessionRequestMade();
+            AssertValidCertificateChoiceRequestMade("ADVANCED");
+        }
+
+        [Fact]
+        public async Task getCertificate_withShareMdClientIpAddressFalse()
+        {
+            SmartIdCertificate certificate = await builder
+                .WithRelyingPartyUUID("relying-party-uuid")
+                .WithRelyingPartyName("relying-party-name")
+                .WithSemanticsIdentifier(new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, SemanticsIdentifier.CountryCode.EE, "31111111111"))
+                .WithCertificateLevel("ADVANCED")
+                .WithShareMdClientIpAddress(false)
+                .FetchAsync();
+            AssertCertificateResponseValid(certificate);
+
+            Assert.False(connector.certificateRequestUsed.RequestProperties is null,
+                "getRequestProperties must be set withShareMdClientIpAddress");
+            Assert.False(connector.certificateRequestUsed.RequestProperties.ShareMdClientIpAddress,
+                "requestProperties.shareMdClientIpAddress must be false");
+
+            AssertCorrectSessionRequestMade();
+            AssertValidCertificateChoiceRequestMade("ADVANCED");
         }
 
         [Fact]
@@ -255,10 +298,13 @@ namespace SK.SmartId
 
         private SessionStatus CreateCertificateSessionStatusCompleteResponse()
         {
-            SessionStatus status = new SessionStatus();
-            status.State = "COMPLETE";
-            status.Cert = CreateSessionCertificate();
-            status.Result = DummyData.createSessionEndResult();
+            SessionStatus status = new SessionStatus
+            {
+                State = "COMPLETE",
+                Cert = CreateSessionCertificate(),
+                Result = DummyData.createSessionEndResult(),
+                DeviceIpAddress = "5.5.5.5"
+            };
             return status;
         }
 
