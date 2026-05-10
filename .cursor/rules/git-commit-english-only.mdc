@@ -1,0 +1,10 @@
+---
+description: Git commit messages in this repository must be written in English only
+alwaysApply: true
+---
+
+# Git commits: English only
+
+- Write the **subject**, **body**, and any **footers** (for example `BREAKING CHANGE:`) in **English** only.
+- Do not use Russian or other languages in commit text; express the same intent in clear, concise English.
+- Keep following **Conventional Commits** when suggesting messages (for example `feat:`, `fix:`, `feat!:` or `BREAKING CHANGE` footers for breaking changes).

@@ -25,6 +25,7 @@
  */
 
 using System;
+using SK.SmartId.Exceptions.Permanent;
 
 namespace SK.SmartId
 {
@@ -46,13 +47,27 @@ namespace SK.SmartId
     /// in hashed format.
     /// </para>
     /// </summary>
-    public class SignableData
+    public class SignableData : IDigestInput
     {
         private readonly byte[] dataToSign;
 
         public SignableData(byte[] dataToSign)
+            : this(dataToSign, SmartIdHashAlgorithm.SHA_512)
         {
+        }
+
+        public SignableData(byte[] dataToSign, SmartIdHashAlgorithm hashAlgorithm)
+        {
+            if (dataToSign == null || dataToSign.Length == 0)
+            {
+                throw new SmartIdRequestSetupException("Parameter 'dataToSign' cannot be empty");
+            }
+            if (!Enum.IsDefined(typeof(SmartIdHashAlgorithm), hashAlgorithm))
+            {
+                throw new SmartIdRequestSetupException("Parameter 'hashAlgorithm' must be set");
+            }
             this.dataToSign = (byte[])dataToSign.Clone();
+            HashAlgorithm = hashAlgorithm;
         }
 
         public string CalculateHashInBase64()
@@ -63,7 +78,7 @@ namespace SK.SmartId
 
         public byte[] CalculateHash()
         {
-            return DigestCalculator.CalculateDigest(dataToSign, HashType);
+            return DigestCalculator.CalculateDigest(dataToSign, HashAlgorithm);
         }
 
         /// <summary>
@@ -81,6 +96,22 @@ namespace SK.SmartId
             return VerificationCodeCalculator.Calculate(digest);
         }
 
-        public HashType HashType { get; set; } = HashType.SHA512;
+        /// <summary>
+        /// Hash algorithm for signing (Java <c>HashAlgorithm</c>); includes SHA-3.
+        /// </summary>
+        public SmartIdHashAlgorithm HashAlgorithm { get; set; }
+
+        /// <summary>
+        /// Legacy SHA-2 family selector; maps to <see cref="HashAlgorithm"/>.
+        /// </summary>
+        public HashType HashType
+        {
+            get => HashTypeConversions.ToHashType(HashAlgorithm);
+            set => HashAlgorithm = HashTypeConversions.FromHashType(value);
+        }
+
+        public string GetDigestInBase64() => CalculateHashInBase64();
+
+        public SmartIdHashAlgorithm GetHashAlgorithm() => HashAlgorithm;
     }
 }

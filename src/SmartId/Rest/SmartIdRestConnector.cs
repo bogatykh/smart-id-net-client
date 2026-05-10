@@ -10,10 +10,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,28 +30,59 @@ using SK.SmartId.Exceptions.UserAccounts;
 using SK.SmartId.Exceptions.UserActions;
 using SK.SmartId.Rest.Dao;
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SK.SmartId.Rest
 {
+    /// <summary>
+    /// REST client for Smart-ID session API. For request/response logging similar to Java <c>SmartIdRestConnector</c>
+    /// registering <c>LoggingFilter</c>, pass an <see cref="HttpClient"/> whose pipeline includes
+    /// <see cref="SmartIdHttpLoggingHandler"/> (see class remarks there).
+    /// </summary>
     public class SmartIdRestConnector : ISmartIdConnector
     {
-        private const string SESSION_STATUS_URI = "session/{0}";
+        private static readonly JsonSerializerOptions JsonWriteOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
-        private const string CERTIFICATE_CHOICE_BY_DOCUMENT_NUMBER_PATH = "certificatechoice/document/{0}";
-        private const string CERTIFICATE_CHOICE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER = "certificatechoice/etsi/{0}";
+        private static readonly JsonSerializerOptions JsonReadOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
-        private const string SIGNATURE_BY_DOCUMENT_NUMBER_PATH = "signature/document/{0}";
-        private const string SIGNATURE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER = "signature/etsi/{0}";
+        private const string SessionStatusUri = "session";
 
-        private const string AUTHENTICATE_BY_DOCUMENT_NUMBER_PATH = "authentication/document/{0}";
-        private const string AUTHENTICATE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER = "authentication/etsi/{0}";
+        private const string DeviceLinkCertificateChoiceDeviceLinkPath = "signature/certificate-choice/device-link/anonymous";
+        private const string LinkedNotificationSignatureWithDocumentNumberPath = "signature/notification/linked";
+
+        private const string NotificationCertificateChoiceWithSemanticIdentifierPath = "signature/certificate-choice/notification/etsi";
+
+        private const string CertificateByDocumentNumberPath = "signature/certificate";
+
+        private const string DeviceLinkSignatureWithSemanticIdentifierPath = "signature/device-link/etsi";
+        private const string DeviceLinkSignatureWithDocumentNumberPath = "signature/device-link/document";
+
+        private const string NotificationSignatureWithSemanticIdentifierPath = "signature/notification/etsi";
+        private const string NotificationSignatureWithDocumentNumberPath = "signature/notification/document";
+
+        private const string AnonymousDeviceLinkAuthenticationPath = "authentication/device-link/anonymous";
+        private const string DeviceLinkAuthenticationWithSemanticIdentifierPath = "authentication/device-link/etsi";
+        private const string DeviceLinkAuthenticationWithDocumentNumberPath = "authentication/device-link/document";
+
+        private const string NotificationAuthenticationWithSemanticIdentifierPath = "authentication/notification/etsi";
+        private const string NotificationAuthenticationWithDocumentNumberPath = "authentication/notification/document";
 
         private readonly string endpointUrl;
         private readonly HttpClient configuredClient;
@@ -68,70 +99,32 @@ namespace SK.SmartId.Rest
             this.configuredClient = configuredClient;
         }
 
-        public async Task<SessionStatus> GetSessionStatusAsync(string sessionId, CancellationToken cancellationToken)
+        public async Task<SessionStatus> GetSessionStatusAsync(string sessionId, CancellationToken cancellationToken = default)
         {
             SessionStatusRequest request = CreateSessionStatusRequest(sessionId);
 
-            var uriBuilder = new UriBuilder(new Uri(new Uri(endpointUrl), string.Format(SESSION_STATUS_URI, request.SessionId)));
+            var uri = AppendPath(CombineEndpointRoot(), SessionStatusUri, request.SessionId);
+            uri = WithTimeoutMs(uri, request);
 
-            AddResponseSocketOpenTimeUrlParameter(request, uriBuilder);
-
-            var responseMessage = await configuredClient.GetAsync(uriBuilder.Uri, cancellationToken);
-
-            if (!responseMessage.IsSuccessStatusCode)
+            using (var req = new HttpRequestMessage(HttpMethod.Get, uri))
             {
-                if (responseMessage.StatusCode == HttpStatusCode.NotFound)
+                req.Headers.TryAddWithoutValidation("User-Agent", BuildUserAgentString());
+
+                using (var responseMessage = await configuredClient.SendAsync(req, cancellationToken))
                 {
-                    throw new SessionNotFoundException();
+                    if (responseMessage.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        throw new SessionNotFoundException();
+                    }
+
+                    responseMessage.EnsureSuccessStatusCode();
+
+                    using (var stream = await responseMessage.Content.ReadAsStreamAsync())
+                    {
+                        return await JsonSerializer.DeserializeAsync<SessionStatus>(stream, JsonReadOptions, cancellationToken);
+                    }
                 }
             }
-
-            responseMessage.EnsureSuccessStatusCode();
-
-            return await JsonSerializer.DeserializeAsync<SessionStatus>(await responseMessage.Content.ReadAsStreamAsync(), cancellationToken: cancellationToken);
-        }
-
-        public async Task<CertificateChoiceResponse> GetCertificateAsync(string documentNumber, CertificateRequest request, CancellationToken cancellationToken)
-        {
-            var uri = new Uri(new Uri(endpointUrl), string.Format(CERTIFICATE_CHOICE_BY_DOCUMENT_NUMBER_PATH, documentNumber));
-
-            return await PostCertificateRequestAsync(uri, request, cancellationToken);
-        }
-
-        public async Task<CertificateChoiceResponse> GetCertificateAsync(SemanticsIdentifier semanticsIdentifier,
-            CertificateRequest request, CancellationToken cancellationToken)
-        {
-            var uri = new Uri(new Uri(endpointUrl), string.Format(CERTIFICATE_CHOICE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER, semanticsIdentifier.Identifier));
-
-            return await PostCertificateRequestAsync(uri, request, cancellationToken);
-        }
-
-        public async Task<SignatureSessionResponse> SignAsync(string documentNumber, SignatureSessionRequest request, CancellationToken cancellationToken)
-        {
-            var uri = new Uri(new Uri(endpointUrl), string.Format(SIGNATURE_BY_DOCUMENT_NUMBER_PATH, documentNumber));
-
-            return await PostSigningRequestAsync(uri, request, cancellationToken);
-        }
-
-        public async Task<SignatureSessionResponse> SignAsync(SemanticsIdentifier semanticsIdentifier, SignatureSessionRequest request, CancellationToken cancellationToken)
-        {
-            var uri = new Uri(new Uri(endpointUrl), string.Format(SIGNATURE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER, semanticsIdentifier.Identifier));
-
-            return await PostSigningRequestAsync(uri, request, cancellationToken);
-        }
-
-        public async Task<AuthenticationSessionResponse> AuthenticateAsync(String documentNumber, AuthenticationSessionRequest request, CancellationToken cancellationToken)
-        {
-            var uri = new Uri(new Uri(endpointUrl), string.Format(AUTHENTICATE_BY_DOCUMENT_NUMBER_PATH, documentNumber));
-
-            return await PostAuthenticationRequestAsync(uri, request, cancellationToken);
-        }
-
-        public async Task<AuthenticationSessionResponse> AuthenticateAsync(SemanticsIdentifier semanticsIdentifier, AuthenticationSessionRequest request, CancellationToken cancellationToken)
-        {
-            var uri = new Uri(new Uri(endpointUrl), string.Format(AUTHENTICATE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER, semanticsIdentifier.Identifier));
-
-            return await PostAuthenticationRequestAsync(uri, request, cancellationToken);
         }
 
         public void SetSessionStatusResponseSocketOpenTime(TimeSpan? sessionStatusResponseSocketOpenTime)
@@ -139,71 +132,179 @@ namespace SK.SmartId.Rest
             this.sessionStatusResponseSocketOpenTime = sessionStatusResponseSocketOpenTime;
         }
 
-        private async Task<CertificateChoiceResponse> PostCertificateRequestAsync(Uri uri, CertificateRequest request, CancellationToken cancellationToken)
+        public Task<DeviceLinkSessionResponse> InitDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default)
         {
-            return await PostRequestAsync<CertificateChoiceResponse, CertificateRequest>(uri, request, cancellationToken);
+            var uri = AppendPath(CombineEndpointRoot(), DeviceLinkAuthenticationWithSemanticIdentifierPath, semanticsIdentifier.Identifier);
+            return PostRequestAsync<DeviceLinkSessionResponse>(uri, request, cancellationToken);
         }
 
-        private async Task<AuthenticationSessionResponse> PostAuthenticationRequestAsync(Uri uri, AuthenticationSessionRequest request, CancellationToken cancellationToken)
+        public Task<DeviceLinkSessionResponse> InitDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default)
         {
-            return await PostRequestAsync<AuthenticationSessionResponse, AuthenticationSessionRequest>(uri, request, cancellationToken);
+            var uri = AppendPath(CombineEndpointRoot(), DeviceLinkAuthenticationWithDocumentNumberPath, documentNumber);
+            return PostRequestAsync<DeviceLinkSessionResponse>(uri, request, cancellationToken);
         }
 
-        private async Task<SignatureSessionResponse> PostSigningRequestAsync(Uri uri, SignatureSessionRequest request, CancellationToken cancellationToken)
+        public Task<DeviceLinkSessionResponse> InitAnonymousDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request,
+            CancellationToken cancellationToken = default)
         {
-            return await PostRequestAsync<SignatureSessionResponse, SignatureSessionRequest>(uri, request, cancellationToken);
+            var uri = AppendPath(CombineEndpointRoot(), AnonymousDeviceLinkAuthenticationPath);
+            return PostRequestAsync<DeviceLinkSessionResponse>(uri, request, cancellationToken);
         }
 
-        private async Task<T> PostRequestAsync<T, V>(Uri uri, V request, CancellationToken cancellationToken)
+        public Task<NotificationAuthenticationSessionResponse> InitNotificationAuthenticationAsync(NotificationAuthenticationSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default)
         {
-            using (var stringContent = new StringContent(JsonSerializer.Serialize(request, new JsonSerializerOptions()
+            var uri = AppendPath(CombineEndpointRoot(), NotificationAuthenticationWithSemanticIdentifierPath, semanticsIdentifier.Identifier);
+            return PostRequestAsync<NotificationAuthenticationSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<NotificationAuthenticationSessionResponse> InitNotificationAuthenticationAsync(NotificationAuthenticationSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), NotificationAuthenticationWithDocumentNumberPath, documentNumber);
+            return PostRequestAsync<NotificationAuthenticationSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<DeviceLinkSessionResponse> InitDeviceLinkCertificateChoiceAsync(DeviceLinkCertificateChoiceSessionRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), DeviceLinkCertificateChoiceDeviceLinkPath);
+            return PostRequestAsync<DeviceLinkSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<LinkedSignatureSessionResponse> InitLinkedNotificationSignatureAsync(LinkedSignatureSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), LinkedNotificationSignatureWithDocumentNumberPath, documentNumber);
+            return PostRequestAsync<LinkedSignatureSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<NotificationCertificateChoiceSessionResponse> InitNotificationCertificateChoiceAsync(NotificationCertificateChoiceSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), NotificationCertificateChoiceWithSemanticIdentifierPath, semanticsIdentifier.Identifier);
+            return PostRequestAsync<NotificationCertificateChoiceSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<CertificateResponse> GetCertificateByDocumentNumberAsync(string documentNumber, CertificateByDocumentNumberRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), CertificateByDocumentNumberPath, documentNumber);
+            return PostRequestAsync<CertificateResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<DeviceLinkSessionResponse> InitDeviceLinkSignatureAsync(DeviceLinkSignatureSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), DeviceLinkSignatureWithSemanticIdentifierPath, semanticsIdentifier.Identifier);
+            return PostRequestAsync<DeviceLinkSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<DeviceLinkSessionResponse> InitDeviceLinkSignatureAsync(DeviceLinkSignatureSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), DeviceLinkSignatureWithDocumentNumberPath, documentNumber);
+            return PostRequestAsync<DeviceLinkSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<NotificationSignatureSessionResponse> InitNotificationSignatureAsync(NotificationSignatureSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), NotificationSignatureWithSemanticIdentifierPath, semanticsIdentifier.Identifier);
+            return PostRequestAsync<NotificationSignatureSessionResponse>(uri, request, cancellationToken);
+        }
+
+        public Task<NotificationSignatureSessionResponse> InitNotificationSignatureAsync(NotificationSignatureSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default)
+        {
+            var uri = AppendPath(CombineEndpointRoot(), NotificationSignatureWithDocumentNumberPath, documentNumber);
+            return PostRequestAsync<NotificationSignatureSessionResponse>(uri, request, cancellationToken);
+        }
+
+        private Uri CombineEndpointRoot()
+        {
+            var trimmed = endpointUrl?.TrimEnd('/') ?? "";
+            return new Uri(trimmed + "/", UriKind.Absolute);
+        }
+
+        private static Uri AppendPath(Uri root, params string[] segments)
+        {
+            var relative = string.Join("/", segments);
+            return new Uri(root, relative);
+        }
+
+        private static Uri WithTimeoutMs(Uri uri, SessionStatusRequest request)
+        {
+            if (!request.IsResponseSocketOpenTimeSet())
             {
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            }), System.Text.Encoding.UTF8, "application/json"))
+                return uri;
+            }
+
+            var ms = (long)request.ResponseSocketOpenTime.Value.TotalMilliseconds;
+            var ub = new UriBuilder(uri) { Query = "timeoutMs=" + ms };
+            return ub.Uri;
+        }
+
+        private async Task<T> PostRequestAsync<T>(Uri uri, object body, CancellationToken cancellationToken)
+        {
+            var json = JsonSerializer.Serialize(body, body.GetType(), JsonWriteOptions);
+            using (var req = new HttpRequestMessage(HttpMethod.Post, uri))
             {
-                stringContent.Headers.TryAddWithoutValidation("User-Agent", BuildUserAgentString());
+                req.Headers.TryAddWithoutValidation("User-Agent", BuildUserAgentString());
+                req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var responseMessage = await configuredClient.PostAsync(uri, stringContent, cancellationToken);
-
-                if (!responseMessage.IsSuccessStatusCode)
+                using (var responseMessage = await configuredClient.SendAsync(req, cancellationToken))
                 {
-                    if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
+                    if (!responseMessage.IsSuccessStatusCode)
                     {
-                        throw new RelyingPartyAccountConfigurationException("Request is unauthorized for URI " + uri);
+                        MapPostError(uri, responseMessage);
+                        responseMessage.EnsureSuccessStatusCode();
                     }
-                    else if (responseMessage.StatusCode == HttpStatusCode.BadRequest)
+
+                    using (var stream = await responseMessage.Content.ReadAsStreamAsync())
                     {
-                        throw new SmartIdClientException("Server refused the request");
-                    }
-                    else if (responseMessage.StatusCode == (HttpStatusCode)471)
-                    {
-                        throw new NoSuitableAccountOfRequestedTypeFoundException();
-                    }
-                    else if (responseMessage.StatusCode == (HttpStatusCode)472)
-                    {
-                        throw new PersonShouldViewSmartIdPortalException();
-                    }
-                    else if (responseMessage.StatusCode == (HttpStatusCode)480)
-                    {
-                        throw new SmartIdClientException("Client-side API is too old and not supported anymore");
-                    }
-                    else if (responseMessage.StatusCode == (HttpStatusCode)580)
-                    {
-                        throw new ServerMaintenanceException();
-                    }
-                    else if (responseMessage.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        throw new UserAccountNotFoundException();
-                    }
-                    else if (responseMessage.StatusCode == HttpStatusCode.Forbidden)
-                    {
-                        throw new RelyingPartyAccountConfigurationException("No permission to issue the request");
+                        return await JsonSerializer.DeserializeAsync<T>(stream, JsonReadOptions, cancellationToken);
                     }
                 }
+            }
+        }
 
-                responseMessage.EnsureSuccessStatusCode();
-
-                return await JsonSerializer.DeserializeAsync<T>(await responseMessage.Content.ReadAsStreamAsync(), cancellationToken: cancellationToken);
+        private static void MapPostError(Uri uri, HttpResponseMessage responseMessage)
+        {
+            var code = responseMessage.StatusCode;
+            if (code == HttpStatusCode.Unauthorized)
+            {
+                throw new RelyingPartyAccountConfigurationException("Request is unauthorized for URI " + uri);
+            }
+            if (code == HttpStatusCode.BadRequest)
+            {
+                throw new SmartIdClientException("Server refused the request");
+            }
+            if (code == HttpStatusCode.NotFound)
+            {
+                throw new UserAccountNotFoundException();
+            }
+            if (code == HttpStatusCode.Forbidden)
+            {
+                throw new RelyingPartyAccountConfigurationException("No permission to issue the request");
+            }
+            if ((int)code == 471)
+            {
+                throw new NoSuitableAccountOfRequestedTypeFoundException();
+            }
+            if ((int)code == 472)
+            {
+                throw new PersonShouldViewSmartIdPortalException();
+            }
+            if ((int)code == 480)
+            {
+                throw new SmartIdClientException("Client-side API is too old and not supported anymore");
+            }
+            if ((int)code == 580)
+            {
+                throw new ServerMaintenanceException();
             }
         }
 
@@ -217,15 +318,6 @@ namespace SK.SmartId.Rest
             return request;
         }
 
-        private void AddResponseSocketOpenTimeUrlParameter(SessionStatusRequest request, UriBuilder uriBuilder)
-        {
-            if (request.IsResponseSocketOpenTimeSet())
-            {
-                TimeSpan queryTimeout = request.ResponseSocketOpenTime.Value;
-                uriBuilder.Query = $"timeoutMs={queryTimeout.TotalMilliseconds}";
-            }
-        }
-
         protected string BuildUserAgentString()
         {
             return "smart-id-net-client/" + GetClientVersion() + " (.NET/" + Environment.Version + ")";
@@ -234,10 +326,13 @@ namespace SK.SmartId.Rest
         protected string GetClientVersion()
         {
             var assemblyVersionAttribute = GetType().Assembly
-                .GetCustomAttributes<AssemblyVersionAttribute>()
-                .SingleOrDefault();
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            if (assemblyVersionAttribute?.InformationalVersion != null)
+            {
+                return assemblyVersionAttribute.InformationalVersion;
+            }
 
-            return assemblyVersionAttribute?.Version ?? "-";
+            return GetType().Assembly.GetName().Version?.ToString() ?? "-";
         }
     }
 }

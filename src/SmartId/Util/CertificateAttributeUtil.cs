@@ -26,7 +26,10 @@
 
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.X509;
+using SK.SmartId.Exceptions.Permanent;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 
@@ -91,6 +94,43 @@ namespace SK.SmartId.Util
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Certificate policy OIDs from the Certificate Policies extension (Java <c>CertificateAttributeUtil.getCertificatePolicy</c>).
+        /// </summary>
+        public static HashSet<string> GetCertificatePolicyOids(X509Certificate2 certificate)
+        {
+            var result = new HashSet<string>(StringComparer.Ordinal);
+            var bcCert = new X509CertificateParser().ReadCertificate(certificate.RawData);
+            Asn1OctetString extVal = bcCert.GetExtensionValue(X509Extensions.CertificatePolicies);
+            if (extVal == null)
+            {
+                return result;
+            }
+            try
+            {
+                var policies = CertificatePolicies.GetInstance(Asn1Object.FromByteArray(extVal.GetOctets()));
+                foreach (PolicyInformation pi in policies.GetPolicyInformation())
+                {
+                    result.Add(pi.PolicyIdentifier.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new SmartIdClientException("Unable to parse certificate policies", ex);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Whether Key Usage includes Non-Repudiation (Java <c>CertificateAttributeUtil.hasNonRepudiationKeyUsage</c>).
+        /// </summary>
+        public static bool HasNonRepudiationKeyUsage(X509Certificate2 certificate)
+        {
+            var bcCert = new X509CertificateParser().ReadCertificate(certificate.RawData);
+            bool[] keyUsage = bcCert.GetKeyUsage();
+            return keyUsage != null && keyUsage.Length > 1 && keyUsage[1];
         }
     }
 }

@@ -36,6 +36,13 @@ namespace SK.SmartId.Rest.Dao
             Type = type.Code;
         }
 
+        internal Interaction(string typeCode, string displayText60, string displayText200)
+        {
+            Type = typeCode;
+            DisplayText60 = displayText60;
+            DisplayText200 = displayText200;
+        }
+
         public static Interaction DisplayTextAndPIN(string displayText60)
         {
             Interaction interaction = new Interaction(InteractionFlow.DISPLAY_TEXT_AND_PIN)
@@ -73,7 +80,7 @@ namespace SK.SmartId.Rest.Dao
         }
 
         [JsonPropertyName("type")]
-        public string Type { get; }
+        public string Type { get; set; }
 
         [JsonPropertyName("displayText60")]
         public string DisplayText60 { get; set; }

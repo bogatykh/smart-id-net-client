@@ -1,0 +1,73 @@
+name: Publish to NuGet
+
+# Publishes when you push an annotated or lightweight tag like v3.2.1.
+# Package version is taken from the tag (leading "v" is stripped).
+# After NuGet push, creates a GitHub Release with the nupkg/snupkg attached.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          SEMVER="${TAG#v}"
+          if [ -z "$SEMVER" ] || [ "$SEMVER" = "$TAG" ]; then
+            echo "::error::Tag must start with v, e.g. v3.2.1 (got: $TAG)"
+            exit 1
+          fi
+          echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.x
+
+      - name: Restore
+        run: dotnet restore smart-id-net-client.sln
+
+      - name: Build
+        run: dotnet build smart-id-net-client.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test smart-id-net-client.sln --no-build -c Release --verbosity normal --filter "Category!=DemoIntegrationReadme"
+
+      - name: Pack
+        run: |
+          dotnet pack src/SmartId/SmartId.csproj --no-build -c Release \
+            -p:Version="${{ steps.version.outputs.semver }}" -p:PackageVersion="${{ steps.version.outputs.semver }}" \
+            -o "${GITHUB_WORKSPACE}/artifacts"
+
+      - name: Push to nuget.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "${GITHUB_WORKSPACE}"/artifacts/*nupkg \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*nupkg
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          body: |
+            Published to NuGet: **[SmartId ${{ steps.version.outputs.semver }}](https://www.nuget.org/packages/SmartId/${{ steps.version.outputs.semver }})** (gallery index can take a minute).
+
+            Attached: `.nupkg` and `.snupkg`.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

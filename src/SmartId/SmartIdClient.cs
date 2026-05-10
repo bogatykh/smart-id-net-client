@@ -2,7 +2,7 @@
  * #%L
  * Smart ID sample Java client
  * %%
- * Copyright (C) 2018 SK ID Solutions AS
+ * Copyright (C) 2018 - 2025 SK ID Solutions AS
  * %%
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -10,10 +10,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,9 +24,13 @@
  * #L%
  */
 
+using SK.SmartId.Exceptions.Permanent;
 using SK.SmartId.Rest;
+using SK.SmartId.Rest.Dao;
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SK.SmartId
 {
@@ -37,74 +41,98 @@ namespace SK.SmartId
         private TimeSpan pollingSleepTimeout = TimeSpan.FromSeconds(1);
         private TimeSpan? sessionStatusResponseSocketOpenTime;
         private ISmartIdConnector connector;
+        private SessionStatusPoller sessionStatusPoller;
 
-        /// <summary>
-        /// Gets an instance of the certificate request builder
-        /// </summary>
-        /// <returns>certificate request builder instance</returns>
-        public CertificateRequestBuilder GetCertificate()
-        {
-            SessionStatusPoller sessionStatusPoller = CreateSessionStatusPoller(SmartIdConnector);
-            CertificateRequestBuilder builder = new CertificateRequestBuilder(SmartIdConnector, sessionStatusPoller);
-            builder.WithRelyingPartyUUID(RelyingPartyUUID);
-            builder.WithRelyingPartyName(RelyingPartyName);
-            return builder;
-        }
-
-        /// <summary>
-        /// Gets an instance of the signature request builder
-        /// </summary>
-        /// <returns>signature request builder instance</returns>
-        public SignatureRequestBuilder CreateSignature()
-        {
-            SessionStatusPoller sessionStatusPoller = CreateSessionStatusPoller(SmartIdConnector);
-            SignatureRequestBuilder builder = new SignatureRequestBuilder(SmartIdConnector, sessionStatusPoller);
-            builder.WithRelyingPartyUUID(RelyingPartyUUID);
-            builder.WithRelyingPartyName(RelyingPartyName);
-            return builder;
-        }
-
-        /// <summary>
-        /// Gets an instance of the authentication request builder
-        /// </summary>
-        /// <returns>authentication request builder instance</returns>
-        public AuthenticationRequestBuilder CreateAuthentication()
-        {
-            SessionStatusPoller sessionStatusPoller = CreateSessionStatusPoller(SmartIdConnector);
-            AuthenticationRequestBuilder builder = new AuthenticationRequestBuilder(SmartIdConnector, sessionStatusPoller);
-            builder.WithRelyingPartyUUID(RelyingPartyUUID);
-            builder.WithRelyingPartyName(RelyingPartyName);
-            return builder;
-        }
-
-        /// <summary>
-        /// Gets or sets the UUID of the relying party
-        /// <para>
-        /// Can be set also on the builder level,
-        /// but in that case it has to be set
-        /// every time when building a new request.
-        /// </para>
-        /// </summary>
         public string RelyingPartyUUID { get; set; }
 
-        /// <summary>
-        /// Gets or sets the name of the relying party
-        /// <para>
-        /// Can be set also on the builder level,
-        /// but in that case it has to be set
-        /// every time when building a new request.
-        /// </para>
-        /// </summary>
         public string RelyingPartyName { get; set; }
 
-        /// <summary>
-        /// Sets the base URL of the Smart-ID backend environment
-        /// <para>
-        /// It defines the endpoint which the client communicates to.
-        /// </para>
-        /// </summary>
-        /// <param name="hostUrl">base URL of the Smart-ID backend environment</param>
-        public void SetHostUrl(String hostUrl)
+        public DeviceLinkCertificateChoiceSessionRequestBuilder CreateDeviceLinkCertificateRequest()
+        {
+            return new DeviceLinkCertificateChoiceSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public LinkedNotificationSignatureSessionRequestBuilder CreateLinkedNotificationSignature()
+        {
+            return new LinkedNotificationSignatureSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public NotificationCertificateChoiceSessionRequestBuilder CreateNotificationCertificateChoice()
+        {
+            return new NotificationCertificateChoiceSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public DeviceLinkAuthenticationSessionRequestBuilder CreateDeviceLinkAuthentication()
+        {
+            return new DeviceLinkAuthenticationSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public NotificationAuthenticationSessionRequestBuilder CreateNotificationAuthentication()
+        {
+            return new NotificationAuthenticationSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public DeviceLinkSignatureSessionRequestBuilder CreateDeviceLinkSignature()
+        {
+            return new DeviceLinkSignatureSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public CertificateByDocumentNumberRequestBuilder CreateCertificateByDocumentNumber()
+        {
+            return new CertificateByDocumentNumberRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public NotificationSignatureSessionRequestBuilder CreateNotificationSignature()
+        {
+            return new NotificationSignatureSessionRequestBuilder(SmartIdConnector)
+                .WithRelyingPartyUUID(RelyingPartyUUID)
+                .WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public DeviceLinkBuilder CreateDynamicContent()
+        {
+            return new DeviceLinkBuilder().WithRelyingPartyName(RelyingPartyName);
+        }
+
+        public SessionStatusPoller GetSessionStatusPoller()
+        {
+            if (sessionStatusPoller == null)
+            {
+                sessionStatusPoller = new SessionStatusPoller(SmartIdConnector);
+                sessionStatusPoller.SetPollingSleepTime(pollingSleepTimeout);
+            }
+            return sessionStatusPoller;
+        }
+
+        public void SetRelyingPartyUUID(string relyingPartyUUID)
+        {
+            RelyingPartyUUID = relyingPartyUUID;
+        }
+
+        public string GetRelyingPartyUUID() => RelyingPartyUUID;
+
+        public void SetRelyingPartyName(string relyingPartyName)
+        {
+            RelyingPartyName = relyingPartyName;
+        }
+
+        public string GetRelyingPartyName() => RelyingPartyName;
+
+        public void SetHostUrl(string hostUrl)
         {
             this.hostUrl = hostUrl;
         }
@@ -114,69 +142,37 @@ namespace SK.SmartId
             this.configuredClient = configuredClient;
         }
 
-        /// <summary>
-        /// Sets the timeout for each session status poll
-        /// <para>
-        /// Under the hood each operation(authentication, signing, choosing
-        /// certificate) consists of 2 request steps:
-        /// </para>
-        /// <para>
-        /// 1. Initiation request
-        /// </para>
-        /// <para>
-        /// 2. Session status request
-        /// </para>
-        /// <para>
-        /// Session status request is a long poll method, meaning
-        /// the request method might not return until a timeout expires
-        /// set by this parameter.
-        /// </para>
-        /// <para>
-        /// Caller can tune the request parameters inside the bounds
-        /// set by service operator.
-        /// </para>
-        /// <para>
-        /// If not provided, a default is used.
-        /// </para>
-        /// </summary>
-        /// <param name="time">time of each status poll's timeout</param>
         public void SetSessionStatusResponseSocketOpenTime(TimeSpan time)
         {
             sessionStatusResponseSocketOpenTime = time;
+            connector?.SetSessionStatusResponseSocketOpenTime(sessionStatusResponseSocketOpenTime);
         }
 
-        /// <summary>
-        /// Sets the timeout/pause between each session status poll
-        /// </summary>
-        /// <param name="timeout">timeout value</param>
         public void SetPollingSleepTimeout(TimeSpan timeout)
         {
             pollingSleepTimeout = timeout;
-        }
-
-        private SessionStatusPoller CreateSessionStatusPoller(ISmartIdConnector connector)
-        {
-            connector.SetSessionStatusResponseSocketOpenTime(sessionStatusResponseSocketOpenTime);
-            SessionStatusPoller sessionStatusPoller = new SessionStatusPoller(connector);
-            sessionStatusPoller.SetPollingSleepTime(pollingSleepTimeout);
-            return sessionStatusPoller;
+            sessionStatusPoller?.SetPollingSleepTime(pollingSleepTimeout);
         }
 
         public ISmartIdConnector SmartIdConnector
         {
             get
             {
-                if (null == connector)
+                if (connector == null)
                 {
-                    // Fallback to REST connector when not initialised
-                    SmartIdRestConnector connector = configuredClient != null ? new SmartIdRestConnector(hostUrl, configuredClient) : new SmartIdRestConnector(hostUrl);
-                    connector.SetSessionStatusResponseSocketOpenTime(sessionStatusResponseSocketOpenTime);
-
-                    SmartIdConnector = connector;
+                    var rest = configuredClient != null
+                        ? new SmartIdRestConnector(hostUrl, configuredClient)
+                        : new SmartIdRestConnector(hostUrl);
+                    rest.SetSessionStatusResponseSocketOpenTime(sessionStatusResponseSocketOpenTime);
+                    connector = rest;
                 }
                 return connector;
             }
-            set => connector = value;
+            set
+            {
+                connector = value;
+                sessionStatusPoller = null;
+            }
         }
     }
 }

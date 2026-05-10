@@ -65,6 +65,11 @@ namespace SK.SmartId
 
         public string DocumentNumber { get; set; }
 
+        /// <summary>
+        /// When <c>endResult</c> is <c>USER_REFUSED_INTERACTION</c>, maps JSON <c>result.details.interaction</c> from session status.
+        /// </summary>
+        public string ResultDetailsInteraction { get; set; }
+
         public string InteractionFlowUsed { get; set; }
 
         /// <summary>

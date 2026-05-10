@@ -5,7 +5,8 @@ namespace SK.SmartId.Rest.Dao
     public class RequestProperties
     {
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public bool? ShareMdClientIpAddress;
+        [JsonPropertyName("shareMdClientIpAddress")]
+        public bool? ShareMdClientIpAddress { get; set; }
 
         [JsonIgnore]
         public bool HasProperties => ShareMdClientIpAddress != null;

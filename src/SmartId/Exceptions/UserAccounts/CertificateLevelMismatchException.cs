@@ -35,5 +35,10 @@ namespace SK.SmartId.Exceptions.UserActions
             : base("Signer's certificate is below requested certificate level")
         {
         }
+
+        public CertificateLevelMismatchException(string message)
+            : base(message)
+        {
+        }
     }
 }

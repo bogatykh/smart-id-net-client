@@ -1,0 +1,11 @@
+---
+description: Never add Cursor or AI co-authorship to git commits in this repository
+alwaysApply: true
+---
+
+# Git commits: no AI co-author trailers
+
+- Do **not** append `Co-authored-by: Cursor …`, `Co-authored-by: …@cursor.com`, or any similar AI/tool attribution to commit messages.
+- Commits list only human authors as configured in git `user.name` / `user.email`.
+- When suggesting or generating a commit message, output **only** the subject and body the user asked for—no extra trailers for tooling.
+- If a commit message already contains an unwanted `Co-authored-by` line (often injected by a `prepare-commit-msg` hook), fix it from the terminal with hooks disabled, e.g. `git -c core.hooksPath=/dev/null commit --amend` (with `-m`/`-F` as needed). `--no-verify` does **not** skip `prepare-commit-msg`.

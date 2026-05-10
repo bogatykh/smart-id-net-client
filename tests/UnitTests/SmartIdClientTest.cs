@@ -1,1171 +1,218 @@
 /*-
  * #%L
- * Smart ID sample Java client
- * %%
- * Copyright (C) 2018 SK ID Solutions AS
- * %%
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Smart ID .NET client — unit tests
+ * ee.sk.smartid.SmartIdClientTest — selected cases (WireMock in Java → in-memory HttpClient).
  * #L%
  */
 
-using Moq;
-using SK.SmartId.Exceptions;
-using SK.SmartId.Exceptions.Permanent;
-using SK.SmartId.Exceptions.UserAccounts;
-using SK.SmartId.Exceptions.UserActions;
+using SK.SmartId.Common;
 using SK.SmartId.Rest;
 using SK.SmartId.Rest.Dao;
+using SK.SmartId.Support;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using static SK.SmartId.Rest.Dao.SemanticsIdentifier;
 
 namespace SK.SmartId
 {
     public class SmartIdClientTest
     {
-        private readonly Mock<HttpMessageHandler> handlerMock;
-        private readonly SmartIdClient client;
+        private const string PersonCode = "PNOEE-1234567890";
+        private const string InitialCallbackUrl = "https://example.com/callback";
+        private static readonly string RpChallengeB64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(new string('a', 32)));
 
-        public SmartIdClientTest()
+        private static SmartIdClient CreateClient(StubHttpMessageHandler stub)
         {
-            handlerMock = new Mock<HttpMessageHandler>();
-
-            client = new SmartIdClient
+            var client = new SmartIdClient
             {
-                RelyingPartyUUID = "de305d54-75b4-431b-adb2-eb6b9e546014",
-                RelyingPartyName = "BANK123"
+                RelyingPartyUUID = "00000000-0000-4000-8000-000000000000",
+                RelyingPartyName = "DEMO"
             };
-            client.SetHostUrl("http://localhost:18089");
-            client.SetConfiguredClient(new HttpClient(handlerMock.Object));
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json", "responses/signatureSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequestWithSha512.json", "responses/signatureSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequestWithNonce.json", "responses/signatureSessionResponse.json");
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/etsi/PNOEE-31111111111", "requests/signatureSessionRequest.json", "responses/signatureSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/etsi/PASEE-987654321012", "requests/signatureSessionRequest.json", "responses/signatureSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/signature/etsi/IDCEE-AA3456789", "requests/signatureSessionRequest.json", "responses/signatureSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusForSuccessfulCertificateRequest.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequest.json");
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-31111111111", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/etsi/PNOEE-31111111111", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/etsi/PASEE-987654321012", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/etsi/IDCEE-AA3456789", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/etsi/PASEE-987654321012", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/etsi/IDCEE-AA3456789", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusForSuccessfulAuthenticationRequest.json");
+            client.SetHostUrl("http://localhost");
+            client.SetConfiguredClient(new HttpClient(stub));
+            return client;
         }
 
         [Fact]
-        public void TestSetup()
+        public async Task DeviceLinkCertificateChoice_sameDevice_minimal()
         {
-            Assert.Equal("de305d54-75b4-431b-adb2-eb6b9e546014", client.RelyingPartyUUID);
-            Assert.Equal("BANK123", client.RelyingPartyName);
+            var stub = new StubHttpMessageHandler();
+            stub.AddPostJsonWhenBodyEqualsFile(
+                "/signature/certificate-choice/device-link/anonymous",
+                "requests/sign/linked/cert-choice/certificate-choice-session-request-device-link.json",
+                "responses/sign/linked/certificate-choice/device-link-certificate-choice-session-response.json");
+            var client = CreateClient(stub);
+
+            DeviceLinkSessionResponse response = await client.CreateDeviceLinkCertificateRequest()
+                .WithCertificateLevel(CertificateLevel.QUALIFIED)
+                .WithInitialCallbackUrl(InitialCallbackUrl)
+                .InitAsync();
+
+            Assert.False(string.IsNullOrEmpty(response.SessionID));
+            Assert.False(string.IsNullOrEmpty(response.SessionToken));
+            Assert.False(string.IsNullOrEmpty(response.SessionSecret));
+            Assert.NotNull(response.DeviceLinkBase);
+            Assert.NotEqual(default, response.ReceivedAt);
         }
 
         [Fact]
-        public async Task GetCertificateAndSign_fullExample()
+        public async Task NotificationCertificateChoice_semantics_minimalFields()
         {
-            // Provide data bytes to be signed (Default hash type is SHA-512)
-            SignableData dataToSign = new SignableData(Encoding.UTF8.GetBytes("Hello World!"));
+            var stub = new StubHttpMessageHandler();
+            stub.AddPostJsonWhenBodyEqualsFile(
+                "/signature/certificate-choice/notification/etsi/PNOEE-1234567890",
+                "requests/sign/notification/cert-choice/certificate-choice-session-request-only-required-fields.json",
+                "responses/sign/notification/cert-choice/notification-certificate-choice-session-response.json");
+            var client = CreateClient(stub);
 
-            // Calculate verification code
-            Assert.Equal("4664", dataToSign.CalculateVerificationCode());
+            NotificationCertificateChoiceSessionResponse response = await client.CreateNotificationCertificateChoice()
+                .WithSemanticsIdentifier(new SemanticsIdentifier(PersonCode))
+                .InitAsync();
 
-            // Get certificate and document number
-            SmartIdCertificate certificateResponse = await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(new SemanticsIdentifier("PNO", "EE", "31111111111"))
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-
-            X509Certificate2 x509Certificate = certificateResponse.Certificate;
-            string documentNumber = certificateResponse.DocumentNumber;
-
-            // Sign the data using the document number
-            SmartIdSignature signature = await client
-                .CreateSignature()
-                .WithDocumentNumber(documentNumber)
-                .WithSignableData(dataToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") })
-                .SignAsync();
-
-            byte[] signatureValue = signature.Value;
-            string algorithmName = signature.AlgorithmName; // Returns "sha512WithRSAEncryption"
-
-            string interactionFlowUsed = signature.InteractionFlowUsed;
-
-            Assert.Equal("displayTextAndPIN", interactionFlowUsed);
-            AssertValidSignatureCreated(signature);
+            Assert.False(string.IsNullOrEmpty(response.SessionID));
         }
 
         [Fact]
-        public async Task GetCertificateAndSign_withExistingHash()
+        public async Task SessionsStatus_fetch_final()
         {
-            SmartIdCertificate certificateResponse = await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(new SemanticsIdentifier("PNO", "EE", "31111111111"))
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
+            var stub = new StubHttpMessageHandler();
+            stub.AddJsonResponse(
+                HttpMethod.Get,
+                u => u.AbsolutePath.EndsWith("/session/abcdef1234567890", StringComparison.Ordinal),
+                "responses/session-status-successful-authentication.json");
+            var client = CreateClient(stub);
 
-            string documentNumber = certificateResponse.DocumentNumber;
+            SessionStatus status = await client.GetSessionStatusPoller().FetchFinalSessionStatusAsync("abcdef1234567890");
+            Assert.Equal("COMPLETE", status.State);
+            Assert.Equal("OK", status.Result.EndResult);
+        }
 
-            SignableHash hashToSign = new SignableHash
+        [Fact]
+        public async Task SessionsStatus_direct_get_running()
+        {
+            var stub = new StubHttpMessageHandler();
+            stub.AddJsonResponse(
+                HttpMethod.Get,
+                u => u.AbsolutePath.EndsWith("/session/abcdef1234567890", StringComparison.Ordinal),
+                "responses/session-status-running.json");
+            var client = CreateClient(stub);
+
+            SessionStatus status = await client.SmartIdConnector.GetSessionStatusAsync("abcdef1234567890");
+            Assert.Equal("RUNNING", status.State);
+            Assert.Null(status.Result);
+        }
+
+        public static IEnumerable<object[]> SameDeviceFlows()
+        {
+            yield return new object[] { DeviceLinkType.WEB_2_APP };
+            yield return new object[] { DeviceLinkType.APP_2_APP };
+        }
+
+        [Theory]
+        [MemberData(nameof(SameDeviceFlows))]
+        public async Task DynamicContent_authentication_sameDevice_flows(DeviceLinkType deviceLinkType)
+        {
+            var stub = new StubHttpMessageHandler();
+            stub.AddPostJsonWhenBodyEqualsFile("/authentication/device-link/anonymous",
+                "requests/auth/device-link/device-link-authentication-session-request-same-device-only-required-fields.json",
+                "responses/auth/device-link/device-link-authentication-session-response.json");
+            var client = CreateClient(stub);
+
+            DeviceLinkAuthenticationSessionRequestBuilder builder = client.CreateDeviceLinkAuthentication()
+                .WithRpChallenge(RpChallengeB64)
+                .WithSignatureAlgorithm(AuthenticationSignatureAlgorithm.RSASSA_PSS)
+                .WithInteractions(new List<DeviceLinkInteraction> { DeviceLinkInteraction.DisplayTextAndPin("Log in?") })
+                .WithHashAlgorithm(SmartIdHashAlgorithm.SHA3_512)
+                .WithInitialCallbackUrl(InitialCallbackUrl);
+
+            DeviceLinkSessionResponse response = await builder.InitAsync();
+            DeviceLinkAuthenticationSessionRequest request = builder.GetAuthenticationSessionRequest();
+
+            Uri deviceLink = client.CreateDynamicContent()
+                .WithSchemeName("smart-id-demo")
+                .WithDeviceLinkBase(response.DeviceLinkBase.ToString())
+                .WithDeviceLinkType(deviceLinkType)
+                .WithSessionType(SessionType.AUTHENTICATION)
+                .WithSessionToken(response.SessionToken)
+                .WithLang("eng")
+                .WithDigest("YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=")
+                .WithInitialCallbackUrl(request.InitialCallbackUrl)
+                .WithInteractions(request.Interactions)
+                .BuildDeviceLink(response.SessionSecret);
+
+            AssertDeviceLinkQuery(deviceLink, SessionType.AUTHENTICATION, deviceLinkType, response.SessionToken);
+        }
+
+        /// <remarks>Java uses full QR image generation; this test only asserts device-link URI shape.</remarks>
+        [Fact]
+        public async Task DynamicContent_authentication_QR_without_image()
+        {
+            var stub = new StubHttpMessageHandler();
+            stub.AddPostJsonWhenBodyEqualsFile("/authentication/device-link/anonymous",
+                "requests/auth/device-link/device-link-authentication-session-request-qr-code.json",
+                "responses/auth/device-link/device-link-authentication-session-response.json");
+            var client = CreateClient(stub);
+
+            DeviceLinkAuthenticationSessionRequestBuilder builder = client.CreateDeviceLinkAuthentication()
+                .WithRpChallenge(RpChallengeB64)
+                .WithSignatureAlgorithm(AuthenticationSignatureAlgorithm.RSASSA_PSS)
+                .WithInteractions(new List<DeviceLinkInteraction> { DeviceLinkInteraction.DisplayTextAndPin("Log in?") })
+                .WithHashAlgorithm(SmartIdHashAlgorithm.SHA3_512);
+
+            DeviceLinkSessionResponse response = await builder.InitAsync();
+            DeviceLinkAuthenticationSessionRequest authenticationSessionRequest = builder.GetAuthenticationSessionRequest();
+
+            long elapsedSeconds = (long)(DateTime.UtcNow - response.ReceivedAt).TotalSeconds;
+            Uri qrUri = client.CreateDynamicContent()
+                .WithSchemeName("smart-id-demo")
+                .WithDeviceLinkBase(response.DeviceLinkBase.ToString())
+                .WithDeviceLinkType(DeviceLinkType.QR_CODE)
+                .WithSessionType(SessionType.AUTHENTICATION)
+                .WithSessionToken(response.SessionToken)
+                .WithElapsedSeconds(elapsedSeconds)
+                .WithLang("eng")
+                .WithDigest("YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=")
+                .WithInteractions(authenticationSessionRequest.Interactions)
+                .BuildDeviceLink(response.SessionSecret);
+
+            AssertDeviceLinkQuery(qrUri, SessionType.AUTHENTICATION, DeviceLinkType.QR_CODE, response.SessionToken);
+        }
+
+        private static void AssertDeviceLinkQuery(Uri qrCodeUri, SessionType sessionType, DeviceLinkType deviceLinkType, string sessionToken)
+        {
+            Assert.Equal("https", qrCodeUri.Scheme);
+            Assert.Equal("smart-id.com", qrCodeUri.Host);
+            Assert.Equal("/device-link/", qrCodeUri.AbsolutePath);
+
+            string q = qrCodeUri.Query.TrimStart('?');
+            var parts = q.Split('&');
+            Assert.Contains("version=1.0", parts);
+            Assert.Contains("sessionType=" + ToSessionTypeApi(sessionType), parts);
+            Assert.Contains("deviceLinkType=" + ToDeviceLinkTypeApi(deviceLinkType), parts);
+            Assert.Contains("sessionToken=" + sessionToken, parts);
+            Assert.Contains("lang=eng", parts);
+            Assert.Contains(parts, entry => entry.StartsWith("authCode=", StringComparison.Ordinal));
+        }
+
+        private static string ToSessionTypeApi(SessionType st) =>
+            st switch
             {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
-            };
-
-            SmartIdSignature signature = await client
-                .CreateSignature()
-                .WithDocumentNumber(documentNumber)
-                .WithSignableHash(hashToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signature);
-        }
-
-        [Fact]
-        public async Task GetCertificateUsingSemanticsIdentifier()
-        {
-            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier("PNO", "EE", "31111111111");
-
-            SmartIdCertificate certificate = await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(semanticsIdentifier)
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-
-            AssertCertificateResponseValid(certificate);
-        }
-
-        [Fact]
-        public async Task GetCertificateUsingDocumentNumber()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/document/PNOEE-31111111111-ADVANCED-LEVEL", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-
-            SmartIdCertificate certificate = await client
-                .GetCertificate()
-                .WithDocumentNumber("PNOEE-31111111111-ADVANCED-LEVEL")
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-
-            AssertCertificateResponseValid(certificate);
-        }
-
-        [Fact]
-        public async Task GetCertificateWithNonce()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/document/PNOEE-31111111111-NONCE", "requests/certificateChoiceRequestWithNonce.json", "responses/certificateChoiceResponse.json");
-
-            SmartIdCertificate certificate = await client
-                .GetCertificate()
-                .WithDocumentNumber("PNOEE-31111111111-NONCE")
-                .WithCertificateLevel("ADVANCED")
-                .WithNonce("zstOt2umlc")
-                .FetchAsync();
-
-            AssertCertificateResponseValid(certificate);
-        }
-
-        [Fact]
-        public async Task GetCertificateWithManualSessionStatusRequesting()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/document/PNOEE-31111111111-ADVANCED-LEVEL", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-
-            CertificateRequestBuilder builder = client.GetCertificate();
-            string sessionId = await builder
-                    .WithDocumentNumber("PNOEE-31111111111-ADVANCED-LEVEL")
-                    .WithCertificateLevel("ADVANCED")
-                    .InitiateCertificateChoiceAsync();
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusForSuccessfulAuthenticationRequest.json");
-
-            SessionStatus sessionStatus = await client.SmartIdConnector.GetSessionStatusAsync(sessionId);
-            SmartIdCertificate certificate = builder.CreateSmartIdCertificate(sessionStatus);
-
-            AssertCertificateResponseValid(certificate);
-        }
-
-        [Fact]
-        public async Task GetCertificateWithManualSessionStatusRequesting_andCustomResponseSocketTimeout()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/document/PNOEE-31111111111-ADVANCED-LEVEL", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-
-            client.SetSessionStatusResponseSocketOpenTime(TimeSpan.FromSeconds(5));
-            CertificateRequestBuilder builder = client.GetCertificate();
-            String sessionId = await builder
-                    .WithDocumentNumber("PNOEE-31111111111-ADVANCED-LEVEL")
-                    .WithCertificateLevel("ADVANCED")
-                    .InitiateCertificateChoiceAsync();
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/97f5058e-e308-4c83-ac14-7712b0eb9d86?timeoutMs=5000", "responses/sessionStatusForSuccessfulAuthenticationRequest.json");
-
-            SessionStatus sessionStatus = await client.SmartIdConnector.GetSessionStatusAsync(sessionId);
-            SmartIdCertificate certificate = builder.CreateSmartIdCertificate(sessionStatus);
-
-            AssertCertificateResponseValid(certificate);
-        }
-
-        [Fact]
-        public async Task Sign_withDocumentNumber()
-        {
-            SignableHash hashToSign = new SignableHash
-            {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
+                SessionType.AUTHENTICATION => "auth",
+                SessionType.SIGNATURE => "sign",
+                SessionType.CERTIFICATE_CHOICE => "cert",
+                _ => throw new ArgumentOutOfRangeException(nameof(st))
             };
 
-            Assert.Equal("1796", hashToSign.CalculateVerificationCode());
-
-            SmartIdSignature signature = await client
-                .CreateSignature()
-                .WithDocumentNumber("PNOEE-31111111111")
-                .WithSignableHash(hashToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signature);
-        }
-
-        [Fact]
-        public async Task Sign_withSemanticsIdentifier()
-        {
-            SignableHash hashToSign = new SignableHash
+        private static string ToDeviceLinkTypeApi(DeviceLinkType t) =>
+            t switch
             {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
+                DeviceLinkType.QR_CODE => "QR",
+                DeviceLinkType.WEB_2_APP => "Web2App",
+                DeviceLinkType.APP_2_APP => "App2App",
+                _ => throw new ArgumentOutOfRangeException(nameof(t))
             };
-
-            Assert.Equal("1796", hashToSign.CalculateVerificationCode());
-
-            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(IdentityType.IDC, CountryCode.EE, "AA3456789");
-
-            SmartIdSignature signature = await client
-                .CreateSignature()
-                .WithSemanticsIdentifier(semanticsIdentifier)
-                .WithSignableHash(hashToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signature);
-        }
-
-        [Fact]
-        public async Task SignWithNonce()
-        {
-            SignableHash hashToSign = new SignableHash
-            {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
-            };
-
-            Assert.Equal("1796", hashToSign.CalculateVerificationCode());
-
-            SmartIdSignature signature = await client
-                .CreateSignature()
-                .WithDocumentNumber("PNOEE-31111111111")
-                .WithSignableHash(hashToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithNonce("zstOt2umlc")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signature);
-        }
-
-        [Fact]
-        public async Task SignWithManualSessionStatusRequesting()
-        {
-            SignableHash hashToSign = new SignableHash
-            {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
-            };
-
-            Assert.Equal("1796", hashToSign.CalculateVerificationCode());
-
-            SignatureRequestBuilder builder = client.CreateSignature();
-            String sessionId = await builder
-                    .WithDocumentNumber("PNOEE-31111111111")
-                    .WithSignableHash(hashToSign)
-                    .WithCertificateLevel("ADVANCED")
-                    .WithAllowedInteractionsOrder(new List<Interaction> {
-                            Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                            Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                    )
-                    .InitiateSigningAsync();
-
-            SessionStatus sessionStatus = await client.SmartIdConnector.GetSessionStatusAsync(sessionId);
-            SmartIdSignature signature = builder.CreateSmartIdSignature(sessionStatus);
-
-            AssertValidSignatureCreated(signature);
-        }
-
-        [Fact]
-        public async Task SignWithManualSessionStatusRequesting_andCustomResponseSocketTimeout()
-        {
-            SignableHash hashToSign = new SignableHash
-            {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
-            };
-
-            Assert.Equal("1796", hashToSign.CalculateVerificationCode());
-
-            client.SetSessionStatusResponseSocketOpenTime(TimeSpan.FromSeconds(5));
-            SignatureRequestBuilder builder = client.CreateSignature();
-            string sessionId = await builder
-                    .WithDocumentNumber("PNOEE-31111111111")
-                    .WithSignableHash(hashToSign)
-                    .WithCertificateLevel("ADVANCED")
-                    .WithAllowedInteractionsOrder(new List<Interaction> {
-                            Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                            Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                    )
-                    .InitiateSigningAsync();
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00?timeoutMs=5000", "responses/sessionStatusForSuccessfulAuthenticationRequest.json");
-
-            SessionStatus sessionStatus = await client.SmartIdConnector.GetSessionStatusAsync(sessionId);
-            SmartIdSignature signature = builder.CreateSmartIdSignature(sessionStatus);
-
-            AssertValidSignatureCreated(signature);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenUserAccountNotFound_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json");
-            await Assert.ThrowsAsync<UserAccountNotFoundException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenUserAccountNotFound_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json");
-            await Assert.ThrowsAsync<UserAccountNotFoundException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenUserCancels_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusWhenUserRefusedGeneral.json");
-            await Assert.ThrowsAsync<UserRefusedException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenUserCancels_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusWhenUserRefusedGeneral.json");
-            await Assert.ThrowsAsync<UserRefusedException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenTimeout_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusWhenTimeout.json");
-            await Assert.ThrowsAsync<SessionTimeoutException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenRequiredInteractionNotSupportedByApp_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", "responses/signatureSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusWhenRequiredInteractionNotSupportedByApp.json");
-            await Assert.ThrowsAsync<RequiredInteractionNotSupportedByAppException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenRequiredInteractionNotSupportedByApp_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusWhenRequiredInteractionNotSupportedByApp.json");
-            await Assert.ThrowsAsync<RequiredInteractionNotSupportedByAppException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenDocumentUnusable_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusWhenDocumentUnusable.json");
-            await Assert.ThrowsAsync<DocumentUnusableException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenUnknownErrorCode_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusWhenUnknownErrorCode.json");
-            await Assert.ThrowsAsync<UnprocessableSmartIdResponseException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenDocumentUnusable_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusWhenDocumentUnusable.json");
-            await Assert.ThrowsAsync<DocumentUnusableException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenRequestForbidden_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubForbiddenResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json");
-            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenRequestForbidden_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubForbiddenResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json");
-            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenApiReturnsErrorStatusCode471_shouldThrowNoSuitableAccountOfRequestedTypeFoundException()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json", 471);
-            await Assert.ThrowsAsync<NoSuitableAccountOfRequestedTypeFoundException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenApiReturnsErrorStatusCode472_shouldThrowPersonShouldViewSmartIdPortalExceptionn()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json", 472);
-            await Assert.ThrowsAsync<PersonShouldViewSmartIdPortalException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json", 480);
-            await Assert.ThrowsAsync<SmartIdClientException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task GetCertificate_whenSystemUnderMaintenance_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/certificatechoice/etsi/PNOEE-31111111111", "requests/certificateChoiceRequest.json", 580);
-            await Assert.ThrowsAsync<ServerMaintenanceException>(MakeGetCertificateRequestAsync);
-        }
-
-        [Fact]
-        public async Task Sign_whenSystemUnderMaintenance_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/signature/document/PNOEE-31111111111", "requests/signatureSessionRequest.json", 580);
-            await Assert.ThrowsAsync<ServerMaintenanceException>(MakeCreateSignatureRequestAsync);
-        }
-
-        [Fact]
-        public async Task SetPollingSleepTimeoutForSignatureCreation()
-        {
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequest.json", state, "COMPLETE", "STARTED");
-            client.SetPollingSleepTimeout(TimeSpan.FromSeconds(2L));
-            double duration = await MeasureSigningDurationAsync();
-            Assert.InRange(duration, 2000L, 3000L);
-        }
-
-        [Fact]
-        public async Task CreateSignatureAndGetDeviceIpAddress_noIpAddressReturned()
-        {
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequest.json", state, "COMPLETE", "STARTED");
-            SmartIdSignature signature = await CreateSignatureAsync();
-
-            Assert.Null(signature.DeviceIpAddress);
-        }
-
-        [Fact]
-        public async Task CreateSignatureAndGetDeviceIpAddress()
-        {
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "2c52caf4-13b0-41c4-bdc6-aa268403cc00", "responses/sessionStatusForSuccessfulSigningRequestWithDeviceIpAddress.json", state, "COMPLETE", "STARTED");
-            SmartIdSignature signature = await CreateSignatureAsync();
-
-            Assert.Equal("displayTextAndPIN", signature.InteractionFlowUsed);
-            Assert.Equal("62.65.42.46", signature.DeviceIpAddress);
-        }
-
-        [Fact]
-        public async Task SetPollingSleepTimeoutForCertificateChoice()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/certificatechoice/document/PNOEE-31111111111", "requests/certificateChoiceRequest.json", "responses/certificateChoiceResponse.json");
-
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "97f5058e-e308-4c83-ac14-7712b0eb9d86", "responses/sessionStatusForSuccessfulCertificateRequest.json", state, "COMPLETE", "STARTED");
-            client.SetPollingSleepTimeout(TimeSpan.FromSeconds(2L));
-            double duration = await MeasureCertificateChoiceDurationAsync();
-            Assert.InRange(duration, 2000L, 3000L);
-        }
-
-        [Fact]
-        public async Task SetSessionStatusResponseSocketTimeout()
-        {
-            client.SetSessionStatusResponseSocketOpenTime(TimeSpan.FromSeconds(10L));
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/2c52caf4-13b0-41c4-bdc6-aa268403cc00?timeoutMs=10000", "responses/sessionStatusForSuccessfulAuthenticationRequest.json");
-            SmartIdSignature signature = await CreateSignatureAsync();
-            Assert.NotNull(signature);
-        }
-
-        [Fact]
-        public async Task AuthenticateUsingDocumentNumber()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-
-            AuthenticationHash authenticationHash = new AuthenticationHash
-            {
-                HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==",
-                HashType = HashType.SHA512
-            };
-
-            Assert.Equal("4430", authenticationHash.CalculateVerificationCode());
-
-            SmartIdAuthenticationResponse authenticationResponse = await client
-                .CreateAuthentication()
-                .WithDocumentNumber("PNOEE-32222222222-Z1B2-Q")
-                .WithAuthenticationHash(authenticationHash)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-
-            Assert.Equal("PNOEE-31111111111", authenticationResponse.DocumentNumber);
-            AssertAuthenticationResponseValid(authenticationResponse);
-        }
-
-        [Fact]
-        public async Task Authenticate_usingSemanticsIdentifier()
-        {
-            AuthenticationHash authenticationHash = new AuthenticationHash
-            {
-                HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==",
-                HashType = HashType.SHA512
-            };
-
-            Assert.Equal("4430", authenticationHash.CalculateVerificationCode());
-
-            SmartIdAuthenticationResponse authenticationResponse = await client
-                    .CreateAuthentication()
-                    .WithSemanticsIdentifierAsString("PNOEE-31111111111")
-                    .WithAuthenticationHash(authenticationHash)
-                    .WithCertificateLevel("ADVANCED")
-                    .WithAllowedInteractionsOrder(new List<Interaction> {
-                            Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                            Interaction.DisplayTextAndPIN("Log in?") }
-                    )
-                    .AuthenticateAsync();
-
-            AssertAuthenticationResponseValid(authenticationResponse);
-        }
-
-        [Fact]
-        public async Task AuthenticateWithNonce()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-31111111111-WITH-NONCE", "requests/authenticationSessionRequestWithNonce.json", "responses/authenticationSessionResponse.json");
-
-
-            AuthenticationHash authenticationHash = new AuthenticationHash();
-            authenticationHash.HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==";
-            authenticationHash.HashType = HashType.SHA512;
-
-            Assert.Equal("4430", authenticationHash.CalculateVerificationCode());
-
-            SmartIdAuthenticationResponse authenticationResponse = await client
-                .CreateAuthentication()
-                .WithDocumentNumber("PNOEE-31111111111-WITH-NONCE")
-                .WithAuthenticationHash(authenticationHash)
-                .WithCertificateLevel("ADVANCED")
-                .WithNonce("g9rp4kjca3")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-
-            AssertAuthenticationResponseValid(authenticationResponse);
-        }
-
-        [Fact]
-        public async Task AuthenticateWithManualSessionStatusRequesting()
-        {
-            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(IdentityType.PNO, CountryCode.EE, "31111111111");
-
-            AuthenticationHash authenticationHash = new AuthenticationHash();
-            authenticationHash.HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==";
-            authenticationHash.HashType = HashType.SHA512;
-
-            Assert.Equal("4430", authenticationHash.CalculateVerificationCode());
-
-            AuthenticationRequestBuilder builder = client.CreateAuthentication();
-            String sessionId = await builder
-                    .WithSemanticsIdentifier(semanticsIdentifier)
-                    .WithAuthenticationHash(authenticationHash)
-                    .WithCertificateLevel("ADVANCED")
-                    .WithAllowedInteractionsOrder(new List<Interaction> {
-                            Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                            Interaction.DisplayTextAndPIN("Log in?") }
-                    )
-                    .InitiateAuthenticationAsync();
-
-            SessionStatus sessionStatus = await client.SmartIdConnector.GetSessionStatusAsync(sessionId);
-            SmartIdAuthenticationResponse authenticationResponse = builder.CreateSmartIdAuthenticationResponse(sessionStatus);
-
-            AssertAuthenticationResponseValid(authenticationResponse);
-        }
-
-        [Fact]
-        public async Task AuthenticateWithManualSessionStatusRequesting_andCustomResponseSocketTimeout()
-        {
-            SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(IdentityType.PNO, CountryCode.EE, "31111111111");
-
-            AuthenticationHash authenticationHash = new AuthenticationHash
-            {
-                HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==",
-                HashType = HashType.SHA512
-            };
-
-            Assert.Equal("4430", authenticationHash.CalculateVerificationCode());
-
-            client.SetSessionStatusResponseSocketOpenTime(TimeSpan.FromSeconds(5));
-            AuthenticationRequestBuilder builder = client.CreateAuthentication();
-            string sessionId = await builder
-                    .WithSemanticsIdentifier(semanticsIdentifier)
-                    .WithAuthenticationHash(authenticationHash)
-                    .WithCertificateLevel("ADVANCED")
-                    .WithAllowedInteractionsOrder(new List<Interaction> {
-                            Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                            Interaction.DisplayTextAndPIN("Log in?") }
-                    )
-                    .InitiateAuthenticationAsync();
-
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/1dcc1600-29a6-4e95-a95c-d69b31febcfb?timeoutMs=5000", "responses/sessionStatusForSuccessfulAuthenticationRequest.json");
-
-            SessionStatus sessionStatus = await client.SmartIdConnector.GetSessionStatusAsync(sessionId);
-            SmartIdAuthenticationResponse authenticationResponse = builder.CreateSmartIdAuthenticationResponse(sessionStatus);
-
-            AssertAuthenticationResponseValid(authenticationResponse);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenUserAccountNotFound_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubNotFoundResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json");
-            await Assert.ThrowsAsync<UserAccountNotFoundException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenUserCancels_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusWhenUserRefusedGeneral.json");
-            await Assert.ThrowsAsync<UserRefusedException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenTimeout_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusWhenTimeout.json");
-            await Assert.ThrowsAsync<SessionTimeoutException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenDocumentUnusable_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", "responses/authenticationSessionResponse.json");
-            SmartIdRestServiceStubs.StubRequestWithResponse(handlerMock, "/session/1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusWhenDocumentUnusable.json");
-            await Assert.ThrowsAsync<DocumentUnusableException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenRequestForbidden_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubForbiddenResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json");
-            await Assert.ThrowsAsync<RelyingPartyAccountConfigurationException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenClientSideAPIIsNotSupportedAnymore_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", 480);
-            await Assert.ThrowsAsync<SmartIdClientException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task Authenticate_whenSystemUnderMaintenance_shouldThrowException()
-        {
-            SmartIdRestServiceStubs.StubErrorResponse(handlerMock, "/authentication/document/PNOEE-32222222222-Z1B2-Q", "requests/authenticationSessionRequest.json", 580);
-            await Assert.ThrowsAsync<ServerMaintenanceException>(MakeAuthenticationRequestAsync);
-        }
-
-        [Fact]
-        public async Task SetPollingSleepTimeoutForAuthentication()
-        {
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusForSuccessfulAuthenticationRequest.json", state, "COMPLETE", "STARTED");
-            client.SetPollingSleepTimeout(TimeSpan.FromSeconds(2L));
-            double duration = await MeasureAuthenticationDurationAsync();
-            Assert.True(duration > 2000L, "Duration is " + duration);
-            Assert.True(duration < 3000L, "Duration is " + duration);
-        }
-
-        [Fact]
-        public async Task getDeviceIpAddress_ipAddressNotPresent()
-        {
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusForSuccessfulAuthenticationRequest.json", state, "COMPLETE", "STARTED");
-
-            SmartIdAuthenticationResponse authentication = await CreateAuthenticationAsync();
-            Assert.Null(authentication.DeviceIpAddress);
-        }
-
-        [Fact]
-        public async Task getDeviceIpAddress_ipAddressReturned()
-        {
-            var state = new SmartIdRestServiceStubs.RequestState()
-            {
-                State = "STARTED"
-            };
-
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusRunning.json", state, "STARTED", "COMPLETE");
-            SmartIdRestServiceStubs.StubSessionStatusWithState(handlerMock, "1dcc1600-29a6-4e95-a95c-d69b31febcfb", "responses/sessionStatusForSuccessfulAuthenticationRequestWithDeviceIpAddress.json", state, "COMPLETE", "STARTED");
-
-            SmartIdAuthenticationResponse authentication = await CreateAuthenticationAsync();
-            Assert.Equal("62.65.42.45", authentication.DeviceIpAddress);
-        }
-
-        [Fact]
-        public void VerifySmartIdConnector_whenConnectorIsNotProvided()
-        {
-            client.SetConfiguredClient(null);
-            ISmartIdConnector smartIdConnector = client.SmartIdConnector;
-            Assert.True(smartIdConnector is SmartIdRestConnector);
-        }
-
-        [Fact]
-        public async Task VerifySmartIdConnector_whenConnectorIsProvided()
-        {
-            const string mock = "MOCK";
-            var status = new Mock<SessionStatus>();
-            status.SetupGet(x => x.State).Returns(mock);
-            var connector = new Mock<ISmartIdConnector>();
-            connector.Setup(x => x.GetSessionStatusAsync(null, default)).ReturnsAsync(status.Object);
-            client.SmartIdConnector = connector.Object;
-            Assert.Equal(mock, (await client.SmartIdConnector.GetSessionStatusAsync(null)).State);
-        }
-
-        [Fact]
-        public async Task GetCertificate_noIdentifierGiven()
-        {
-            await Assert.ThrowsAsync<SmartIdClientException>(() =>
-                client
-                     .GetCertificate()
-                     .WithCertificateLevel("ADVANCED")
-                     .FetchAsync()
-            );
-        }
-
-        [Fact]
-        public async Task GetCertificateByETSIPNO_ValidSemanticsIdentifier_ShouldReturnValidCertificate()
-        {
-            SmartIdCertificate cer = await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(new SemanticsIdentifier(IdentityType.PNO, CountryCode.EE, "31111111111"))
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-
-            AssertCertificateResponseValid(cer);
-        }
-
-        [Fact]
-        public async Task GetCertificateByETSIPAS_ValidSemanticsIdentifierAsString_ShouldReturnValidCertificate()
-        {
-            SmartIdCertificate cer = await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.PAS, CountryCode.EE, "987654321012"))
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-
-            AssertCertificateResponseValid(cer);
-        }
-
-        [Fact]
-        public async Task GetCertificateByETSIIDC_ValidSemanticsIdentifier_ShouldReturnValidCertificate()
-        {
-            SmartIdCertificate cer = await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.IDC, CountryCode.EE, "AA3456789"))
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-
-            AssertCertificateResponseValid(cer);
-        }
-
-        [Fact]
-        public async Task GetAuthenticationByETSIPNO_ValidSemanticsIdentifier_ShouldReturnSuccessfulAuthentication()
-        {
-
-            AuthenticationHash authenticationHash = new AuthenticationHash
-            {
-                HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==",
-                HashType = HashType.SHA512
-            };
-
-            SmartIdAuthenticationResponse authResponse = await client
-                .CreateAuthentication()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.PNO, CountryCode.EE, "31111111111"))
-                .WithCertificateLevel("ADVANCED")
-                .WithAuthenticationHash(authenticationHash)
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-
-            AssertAuthenticationResponseValid(authResponse);
-        }
-
-        [Fact]
-        public async Task GetAuthenticationByETSIPAS_ValidSemanticsIdentifier_ShouldReturnSuccessfulAuthentication()
-        {
-
-            AuthenticationHash authenticationHash = new AuthenticationHash();
-            authenticationHash.HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==";
-            authenticationHash.HashType = HashType.SHA512;
-
-            SmartIdAuthenticationResponse authResponse = await client
-                .CreateAuthentication()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.PAS, CountryCode.EE, "987654321012"))
-                .WithCertificateLevel("ADVANCED")
-                .WithAuthenticationHash(authenticationHash)
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-
-            AssertAuthenticationResponseValid(authResponse);
-        }
-
-        [Fact]
-        public async Task GetAuthenticationByETSIIDC_ValidSemanticsIdentifier_ShouldReturnSuccessfulAuthentication()
-        {
-
-            AuthenticationHash authenticationHash = new AuthenticationHash
-            {
-                HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==",
-                HashType = HashType.SHA512
-            };
-
-            SmartIdAuthenticationResponse authResponse = await client
-                .CreateAuthentication()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.IDC, CountryCode.EE, "AA3456789"))
-                .WithCertificateLevel("ADVANCED")
-                .WithAuthenticationHash(authenticationHash)
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-
-            AssertAuthenticationResponseValid(authResponse);
-        }
-
-        [Fact]
-        public async Task GetSignatureByETSIPNO_ValidSemanticsIdentifier_ShouldReturnSuccessfulSignature()
-        {
-            SignableHash signableHash = new SignableHash
-            {
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg=",
-                HashType = HashType.SHA256
-            };
-
-            SmartIdSignature signResponse = await client
-                .CreateSignature()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.PNO, CountryCode.EE, "31111111111"))
-                .WithCertificateLevel("ADVANCED")
-                .WithSignableHash(signableHash)
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signResponse);
-        }
-
-        [Fact]
-        public async Task GetSignatureByETSIPAS_ValidSemanticsIdentifier_ShouldReturnSuccessfulSignature()
-        {
-
-            SignableHash signableHash = new SignableHash
-            {
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg=",
-                HashType = HashType.SHA256
-            };
-
-            SmartIdSignature signResponse = await client
-                .CreateSignature()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.PAS, CountryCode.EE, "987654321012"))
-                .WithCertificateLevel("ADVANCED")
-                .WithSignableHash(signableHash)
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signResponse);
-        }
-
-        [Fact]
-        public async Task GetSignatureByETSIIDC_ValidSemanticsIdentifier_ShouldReturnSuccessfulSignature()
-        {
-
-            SignableHash signableHash = new SignableHash
-            {
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg=",
-                HashType = HashType.SHA256
-            };
-
-            SmartIdSignature signResponse = await client
-                .CreateSignature()
-                .WithSemanticsIdentifier(
-                    new SemanticsIdentifier(IdentityType.IDC, CountryCode.EE, "AA3456789"))
-                .WithCertificateLevel("ADVANCED")
-                .WithSignableHash(signableHash)
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-
-            AssertValidSignatureCreated(signResponse);
-        }
-
-        private async Task<double> MeasureSigningDurationAsync()
-        {
-            DateTime startTime = DateTime.UtcNow;
-            SmartIdSignature signature = await CreateSignatureAsync();
-            DateTime endTime = DateTime.UtcNow;
-            Assert.NotNull(signature);
-            return (endTime - startTime).TotalMilliseconds;
-        }
-
-        private async Task<SmartIdSignature> CreateSignatureAsync()
-        {
-            SignableHash hashToSign = new SignableHash
-            {
-                HashType = HashType.SHA256,
-                HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg="
-            };
-            return await client
-                .CreateSignature()
-                .WithDocumentNumber("PNOEE-31111111111")
-                .WithSignableHash(hashToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-        }
-
-        private async Task<double> MeasureAuthenticationDurationAsync()
-        {
-            DateTime startTime = DateTime.UtcNow;
-            SmartIdAuthenticationResponse AuthenticationResponse = await CreateAuthenticationAsync();
-            DateTime endTime = DateTime.UtcNow;
-            Assert.NotNull(AuthenticationResponse);
-            return (endTime - startTime).TotalMilliseconds;
-        }
-
-        private async Task<SmartIdAuthenticationResponse> CreateAuthenticationAsync()
-        {
-            AuthenticationHash authenticationHash = new AuthenticationHash
-            {
-                HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==",
-                HashType = HashType.SHA512
-            };
-
-            return await client
-                .CreateAuthentication()
-                .WithDocumentNumber("PNOEE-31111111111")
-                .WithAuthenticationHash(authenticationHash)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-        }
-
-        private async Task<double> MeasureCertificateChoiceDurationAsync()
-        {
-            DateTime startTime = DateTime.UtcNow;
-            SmartIdCertificate certificate = await client
-                .GetCertificate()
-                .WithDocumentNumber("PNOEE-31111111111")
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-            DateTime endTime = DateTime.UtcNow;
-            Assert.NotNull(certificate);
-            return (endTime - startTime).TotalMilliseconds;
-        }
-
-        private async Task MakeGetCertificateRequestAsync()
-        {
-            await client
-                .GetCertificate()
-                .WithSemanticsIdentifier(new SemanticsIdentifier(IdentityType.PNO, CountryCode.EE, "31111111111"))
-                .WithCertificateLevel("ADVANCED")
-                .FetchAsync();
-        }
-
-        private async Task MakeCreateSignatureRequestAsync()
-        {
-            SignableHash hashToSign = new SignableHash();
-            hashToSign.HashType = HashType.SHA256;
-            hashToSign.HashInBase64 = "0nbgC2fVdLVQFZJdBbmG7oPoElpCYsQMtrY0c0wKYRg=";
-
-            await client
-                .CreateSignature()
-                .WithDocumentNumber("PNOEE-31111111111")
-                .WithSignableHash(hashToSign)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessage("Authorize transfer of 1 unit from account 113245344343 to account 7677323232?"),
-                        Interaction.DisplayTextAndPIN("Transfer 1 unit to account 7677323232?") }
-                )
-                .SignAsync();
-        }
-
-        private async Task MakeAuthenticationRequestAsync()
-        {
-            AuthenticationHash authenticationHash = new AuthenticationHash();
-            authenticationHash.HashInBase64 = "K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==";
-            authenticationHash.HashType = HashType.SHA512;
-
-            await client
-                .CreateAuthentication()
-                .WithDocumentNumber("PNOEE-32222222222-Z1B2-Q")
-                .WithAuthenticationHash(authenticationHash)
-                .WithCertificateLevel("ADVANCED")
-                .WithAllowedInteractionsOrder(new List<Interaction> {
-                        Interaction.ConfirmationMessageAndVerificationCodeChoice("Log in to self-service?"),
-                        Interaction.DisplayTextAndPIN("Log in?") }
-                )
-                .AuthenticateAsync();
-        }
-
-        private void AssertCertificateResponseValid(SmartIdCertificate certificate)
-        {
-            Assert.NotNull(certificate);
-            Assert.NotNull(certificate.Certificate);
-            X509Certificate2 cert = certificate.Certificate;
-            Assert.Contains("SERIALNUMBER=PNOEE-31111111111", cert.Subject);
-            Assert.Equal("PNOEE-31111111111", certificate.DocumentNumber);
-            Assert.Equal("QUALIFIED", certificate.CertificateLevel);
-        }
-
-        private void AssertValidSignatureCreated(SmartIdSignature signature)
-        {
-            Assert.NotNull(signature);
-            Assert.StartsWith("luvjsi1+1iLN9yfDFEh/BE8h", signature.ValueInBase64);
-            Assert.Equal("sha256WithRSAEncryption", signature.AlgorithmName);
-            Assert.Equal("displayTextAndPIN", signature.InteractionFlowUsed);
-        }
-
-        private void AssertAuthenticationResponseValid(SmartIdAuthenticationResponse authenticationResponse)
-        {
-            Assert.NotNull(authenticationResponse);
-            Assert.Equal("K74MSLkafRuKZ1Ooucvh2xa4Q3nz+R/hFWIShN96SPHNcem+uQ6mFMe9kkJQqp5EaoZnJeaFpl310TmlzRgNyQ==", authenticationResponse.SignedHashInBase64);
-            Assert.Equal("OK", authenticationResponse.EndResult);
-            Assert.NotNull(authenticationResponse.Certificate);
-            Assert.StartsWith("luvjsi1+1iLN9yfDFEh/BE8h", authenticationResponse.SignatureValueInBase64);
-            Assert.Equal("sha256WithRSAEncryption", authenticationResponse.AlgorithmName);
-            Assert.Equal("PNOEE-31111111111", authenticationResponse.DocumentNumber);
-        }
     }
 }

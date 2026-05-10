@@ -25,6 +25,7 @@
  */
 
 using System;
+using SK.SmartId.Exceptions.Permanent;
 
 namespace SK.SmartId
 {
@@ -42,7 +43,7 @@ namespace SK.SmartId
     /// instead when the data to be signed is not already
     /// in hashed format.
     /// </summary>
-    public class SignableHash
+    public class SignableHash : IDigestInput
     {
         public byte[] Hash { private get; set; }
 
@@ -58,11 +59,23 @@ namespace SK.SmartId
             }
         }
 
-        public HashType HashType { get; set; }
+        /// <summary>
+        /// Algorithm that produced <see cref="Hash"/> (Java <c>HashAlgorithm</c>).
+        /// </summary>
+        public SmartIdHashAlgorithm HashAlgorithm { get; set; } = SmartIdHashAlgorithm.SHA_512;
+
+        /// <summary>
+        /// Legacy SHA-2 family selector; maps to <see cref="HashAlgorithm"/>.
+        /// </summary>
+        public HashType HashType
+        {
+            get => HashTypeConversions.ToHashType(HashAlgorithm);
+            set => HashAlgorithm = HashTypeConversions.FromHashType(value);
+        }
 
         public bool AreFieldsFilled()
         {
-            return HashType != null && Hash != null && Hash.Length > 0;
+            return Hash != null && Hash.Length > 0;
         }
 
         /// <summary>
@@ -77,6 +90,25 @@ namespace SK.SmartId
         public string CalculateVerificationCode()
         {
             return VerificationCodeCalculator.Calculate(Hash);
+        }
+
+        public string GetDigestInBase64() => HashInBase64;
+
+        public SmartIdHashAlgorithm GetHashAlgorithm() => HashAlgorithm;
+
+        /// <summary>
+        /// Validates hash and algorithm like the Java record constructor.
+        /// </summary>
+        public void Validate()
+        {
+            if (Hash == null || Hash.Length == 0)
+            {
+                throw new SmartIdRequestSetupException("Parameter 'hash' cannot be empty");
+            }
+            if (!Enum.IsDefined(typeof(SmartIdHashAlgorithm), HashAlgorithm))
+            {
+                throw new SmartIdRequestSetupException("Parameter 'hashAlgorithm' must be set");
+            }
         }
     }
 }
