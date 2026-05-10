@@ -2,10 +2,34 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
     <RootNamespace>SK.SmartId</RootNamespace>
     <AssemblyName>SK.SmartId</AssemblyName>
-    <Version>2.3</Version>
+    <Version>3.2.0</Version>
+    <!-- NuGet package id (assembly remains SK.SmartId). https://www.nuget.org/packages/SmartId -->
+    <PackageId>SmartId</PackageId>
+    <Title>Smart-ID .NET Client</Title>
+    <Authors>Dmitry Bogatykh; SK ID Solutions AS</Authors>
+    <Copyright>Copyright © 2018 SK ID Solutions AS. Copyright © 2021-2026 Dmitry Bogatykh.</Copyright>
+    <Description>
+      Client library for the Smart-ID Relying Party API v3 on .NET Standard 2.0. Supports authentication and qualified electronic signatures using device-link and notification flows, certificate-by-document-number lookup, session polling, and PKIX-oriented validation of user certificates. The public API is aligned with the official smart-id-java-client where applicable. This package is maintained by the community and is not affiliated with or endorsed by SK ID Solutions.
+    </Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/bogatykh/smart-id-net-client</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/bogatykh/smart-id-net-client.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Same path as in README.md so the image resolves on nuget.org and GitHub. -->
+    <PackageIcon>assets\nuget\package-icon.png</PackageIcon>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageTags>Smart-ID;smartid;SK.SmartId;authentication;signing;eid;netstandard;dotnet;rest-api;rp-api</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\nuget\package-icon.png" Pack="true" PackagePath="assets\nuget\package-icon.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Remove="Resources\EID-SK_2016.pem.crt" />
@@ -22,8 +46,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.5.0" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <InternalsVisibleTo Include="UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="System.Text.Json" Version="10.0.7" />
   </ItemGroup>
 
 </Project>

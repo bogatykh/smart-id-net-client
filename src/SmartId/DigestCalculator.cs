@@ -27,6 +27,7 @@
 using SK.SmartId.Exceptions;
 using System;
 using System.Security.Cryptography;
+using Org.BouncyCastle.Crypto.Digests;
 
 namespace SK.SmartId
 {
@@ -34,19 +35,64 @@ namespace SK.SmartId
     {
         public static byte[] CalculateDigest(byte[] dataToDigest, HashType hashType)
         {
+            if (hashType == null)
+            {
+                throw new UnprocessableSmartIdResponseException("Problem with digest calculation.");
+            }
+            return CalculateDigest(dataToDigest, HashTypeConversions.FromHashType(hashType));
+        }
+
+        public static byte[] CalculateDigest(byte[] dataToDigest, SmartIdHashAlgorithm algorithm)
+        {
             try
             {
-                var algorithmName = hashType.AlgorithmName;
-
-                using (var hashAlg = HashAlgorithm.Create(algorithmName.Name))
+                switch (algorithm)
                 {
-                    return hashAlg.ComputeHash(dataToDigest);
+                    case SmartIdHashAlgorithm.SHA_256:
+                    case SmartIdHashAlgorithm.SHA_384:
+                    case SmartIdHashAlgorithm.SHA_512:
+                        using (var hashAlg = HashAlgorithm.Create(MapToSystemName(algorithm)))
+                        {
+                            return hashAlg.ComputeHash(dataToDigest);
+                        }
+                    case SmartIdHashAlgorithm.SHA3_256:
+                        return Sha3Digest(dataToDigest, 256);
+                    case SmartIdHashAlgorithm.SHA3_384:
+                        return Sha3Digest(dataToDigest, 384);
+                    case SmartIdHashAlgorithm.SHA3_512:
+                        return Sha3Digest(dataToDigest, 512);
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null);
                 }
             }
-            catch (Exception e)
+            catch (Exception e) when (!(e is ArgumentOutOfRangeException))
             {
                 throw new UnprocessableSmartIdResponseException("Problem with digest calculation. " + e);
             }
+        }
+
+        private static string MapToSystemName(SmartIdHashAlgorithm algorithm)
+        {
+            switch (algorithm)
+            {
+                case SmartIdHashAlgorithm.SHA_256:
+                    return HashType.SHA256.AlgorithmName.Name;
+                case SmartIdHashAlgorithm.SHA_384:
+                    return HashType.SHA384.AlgorithmName.Name;
+                case SmartIdHashAlgorithm.SHA_512:
+                    return HashType.SHA512.AlgorithmName.Name;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(algorithm));
+            }
+        }
+
+        private static byte[] Sha3Digest(byte[] data, int bitLength)
+        {
+            var digest = new Sha3Digest(bitLength);
+            digest.BlockUpdate(data, 0, data.Length);
+            var output = new byte[digest.GetDigestSize()];
+            digest.DoFinal(output, 0);
+            return output;
         }
     }
 }

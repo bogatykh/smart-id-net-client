@@ -1,29 +1,10 @@
 /*-
  * #%L
  * Smart ID sample Java client
- * %%
- * Copyright (C) 2018 SK ID Solutions AS
- * %%
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
  * #L%
  */
 
+using SK.SmartId.Rest.Dao;
 using System;
 using Xunit;
 
@@ -32,53 +13,55 @@ namespace SK.SmartId
     public class CertificateLevelTest
     {
         [Fact]
-        public void testBothCertificateLevelsQualified()
+        public void BothQualified_IsSameLevelOrHigher()
         {
-            String certificateLevelString = "QUALIFIED";
-            CertificateLevel certificateLevel = new CertificateLevel(certificateLevelString);
-            Assert.True(certificateLevel.IsEqualOrAbove(certificateLevelString));
+            Assert.True(CertificateLevelExtensions.TryParse("QUALIFIED", out var level));
+            Assert.True(level.IsSameLevelOrHigher(CertificateLevel.QUALIFIED));
         }
 
         [Fact]
-        public void testBothCertificateLevelsAdvanced()
+        public void BothAdvanced_IsSameLevelOrHigher()
         {
-            String certificateLevelString = "ADVANCED";
-            CertificateLevel certificateLevel = new CertificateLevel(certificateLevelString);
-            Assert.True(certificateLevel.IsEqualOrAbove(certificateLevelString));
+            Assert.True(CertificateLevelExtensions.TryParse("ADVANCED", out var level));
+            Assert.True(level.IsSameLevelOrHigher(CertificateLevel.ADVANCED));
         }
 
         [Fact]
-        public void testFirstCertificateLevelHigher()
+        public void QualifiedSameOrHigherThanAdvanced()
         {
-            CertificateLevel certificateLevel = new CertificateLevel("QUALIFIED");
-            Assert.True(certificateLevel.IsEqualOrAbove("ADVANCED"));
+            Assert.True(CertificateLevel.QUALIFIED.IsSameLevelOrHigher(CertificateLevel.ADVANCED));
         }
 
         [Fact]
-        public void testFirstCertificateLevelLower()
+        public void AdvancedNotSameOrHigherThanQualified()
         {
-            CertificateLevel certificateLevel = new CertificateLevel("ADVANCED");
-            Assert.False(certificateLevel.IsEqualOrAbove("QUALIFIED"));
+            Assert.False(CertificateLevel.ADVANCED.IsSameLevelOrHigher(CertificateLevel.QUALIFIED));
         }
 
         [Fact]
-        public void testFirstCertLevelUnknown()
+        public void QscdMatchesQualifiedLevel()
         {
-            CertificateLevel certificateLevel = new CertificateLevel("SOME UNKNOWN LEVEL");
-            Assert.False(certificateLevel.IsEqualOrAbove("ADVANCED"));
+            Assert.True(CertificateLevelExtensions.TryParse("QSCD", out var qscd));
+            Assert.True(qscd.IsSameLevelOrHigher(CertificateLevel.QUALIFIED));
+            Assert.True(CertificateLevel.QUALIFIED.IsSameLevelOrHigher(qscd));
         }
 
         [Fact]
-        public void testSecondCertLevelUnknown()
+        public void UnknownString_NotSupported()
         {
-            CertificateLevel certificateLevel = new CertificateLevel("ADVANCED");
-            Assert.False(certificateLevel.IsEqualOrAbove("SOME UNKNOWN LEVEL"));
+            Assert.False(CertificateLevelExtensions.IsSupported("SOME UNKNOWN LEVEL"));
         }
 
         [Fact]
-        public void certificateLevel_nullArgumentToConstructor()
+        public void TryParseUnknown_ReturnsFalse()
         {
-            Assert.Throws<ArgumentException>("certificateLevel", () => new CertificateLevel(null));
+            Assert.False(CertificateLevelExtensions.TryParse("SOME UNKNOWN LEVEL", out _));
+        }
+
+        [Fact]
+        public void NullNotSupported()
+        {
+            Assert.False(CertificateLevelExtensions.IsSupported(null));
         }
     }
 }

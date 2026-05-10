@@ -25,7 +25,10 @@
  */
 
 using SK.SmartId.Exceptions;
+using SK.SmartId.Exceptions.Permanent;
+using SK.SmartId.Exceptions.UserAccounts;
 using SK.SmartId.Exceptions.UserActions;
+using SK.SmartId.Rest.Dao;
 using SK.SmartId.Util;
 using System;
 using System.Collections.Generic;
@@ -77,12 +80,20 @@ namespace SK.SmartId
         /// <returns>authentication result</returns>
         public AuthenticationIdentity Validate(SmartIdAuthenticationResponse authenticationResponse)
         {
+            if (authenticationResponse == null)
+            {
+                throw new SmartIdClientException("Parameter 'authenticationResponse' is not provided");
+            }
+            if (StringUtil.IsEmpty(authenticationResponse.EndResult))
+            {
+                throw new UnprocessableSmartIdResponseException("Authentication response field 'endResult' is empty");
+            }
+            if (!"OK".Equals(authenticationResponse.EndResult, StringComparison.OrdinalIgnoreCase))
+            {
+                ErrorResultHandler.Handle(ToSessionResult(authenticationResponse));
+            }
             ValidateAuthenticationResponse(authenticationResponse);
             AuthenticationIdentity identity = ConstructAuthenticationIdentity(authenticationResponse.Certificate);
-            if (!VerifyResponseEndResult(authenticationResponse))
-            {
-                throw new UnprocessableSmartIdResponseException("Smart-ID API returned end result code '" + authenticationResponse.EndResult + "'");
-            }
             if (!VerifySignature(authenticationResponse))
             {
                 throw new UnprocessableSmartIdResponseException("Failed to verify validity of signature returned by Smart-ID");
@@ -174,29 +185,7 @@ namespace SK.SmartId
 
         private void InitializeTrustedCACertificatesFromKeyStore()
         {
-            var assembly = GetType().Assembly;
-
-            var resources = new HashSet<string>
-            {
-                "SK.SmartId.Resources.EID-SK_2016.pem.crt",
-                "SK.SmartId.Resources.NQ-SK_2016.pem.crt",
-                "SK.SmartId.Resources.TEST_of_EID-SK_2016.pem.crt",
-                "SK.SmartId.Resources.TEST_of_NQ-SK_2016.pem.crt"
-            };
-
-            foreach (var resourceName in resources)
-            {
-                using (Stream resource = assembly.GetManifestResourceStream(resourceName))
-                {
-                    byte[] buffer = new byte[resource.Length];
-                    int r, offset = 0;
-                    while ((r = resource.Read(buffer, offset, buffer.Length - offset)) > 0)
-                        offset += r;
-
-                    var certificate = new X509Certificate2(buffer);
-                    AddTrustedCACertificate(certificate);
-                }
-            }
+            trustedCACertificates.AddRange(EmbeddedSmartIdTrustedCaCertificates.LoadDefaultPemCertificates());
         }
 
         private void ValidateAuthenticationResponse(SmartIdAuthenticationResponse authenticationResponse)
@@ -215,9 +204,16 @@ namespace SK.SmartId
             }
         }
 
-        private bool VerifyResponseEndResult(SmartIdAuthenticationResponse authenticationResponse)
+        private static SessionResult ToSessionResult(SmartIdAuthenticationResponse r)
         {
-            return "OK".Equals(authenticationResponse.EndResult, StringComparison.OrdinalIgnoreCase);
+            return new SessionResult
+            {
+                EndResult = r.EndResult,
+                DocumentNumber = r.DocumentNumber,
+                Details = StringUtil.IsEmpty(r.ResultDetailsInteraction)
+                    ? null
+                    : new SessionResultDetails { Interaction = r.ResultDetailsInteraction }
+            };
         }
 
         private bool VerifySignature(SmartIdAuthenticationResponse authenticationResponse)
@@ -243,44 +239,24 @@ namespace SK.SmartId
 
         private bool IsCertificateTrusted(X509Certificate2 certificate)
         {
-            using (var verify = new X509Chain())
-            {
-                verify.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                verify.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-
-                foreach (X509Certificate2 trustedCACertificate in trustedCACertificates)
-                {
-                    verify.ChainPolicy.ExtraStore.Add(trustedCACertificate);
-                }
-
-                if (verify.Build(certificate))
-                {
-                    foreach (var chainElement in verify.ChainElements)
-                    {
-                        if (string.Equals(chainElement.Certificate.Thumbprint, certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        foreach (var trustedCert in verify.ChainPolicy.ExtraStore)
-                        {
-                            if (string.Equals(trustedCert.Thumbprint, chainElement.Certificate.Thumbprint, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return false;
+            return SmartIdPkixTrust.IsChainTrusted(certificate, trustedCACertificates);
         }
 
         private bool VerifyCertificateLevel(SmartIdAuthenticationResponse authenticationResponse)
         {
-            CertificateLevel certLevel = new CertificateLevel(authenticationResponse.CertificateLevel);
-            string requestedCertificateLevel = authenticationResponse.RequestedCertificateLevel;
-            return string.IsNullOrEmpty(requestedCertificateLevel) || certLevel.IsEqualOrAbove(requestedCertificateLevel);
+            if (string.IsNullOrEmpty(authenticationResponse.RequestedCertificateLevel))
+            {
+                return true;
+            }
+            if (!CertificateLevelExtensions.TryParse(authenticationResponse.CertificateLevel, out var certLevel))
+            {
+                return false;
+            }
+            if (!CertificateLevelExtensions.TryParse(authenticationResponse.RequestedCertificateLevel, out var requestedLevel))
+            {
+                return false;
+            }
+            return certLevel.IsSameLevelOrHigher(requestedLevel);
         }
 
         public static AuthenticationIdentity ConstructAuthenticationIdentity(X509Certificate2 certificate)

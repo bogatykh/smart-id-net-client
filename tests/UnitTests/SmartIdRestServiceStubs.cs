@@ -27,6 +27,7 @@
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -158,7 +159,56 @@ namespace SK.SmartId
 
         private static string ReadFileBody(string fileName)
         {
-            return File.ReadAllText(Path.Combine("Resources", fileName));
+            var rel = fileName.Replace('/', Path.DirectorySeparatorChar);
+            var path = Path.Combine(AppContext.BaseDirectory, "Resources", rel);
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException("Test resource not found: " + path);
+            }
+            return File.ReadAllText(path);
+        }
+
+        /// <summary>POST: URL ends with <paramref name="urlEndsWith"/>; response JSON from <c>Resources/</c>.</summary>
+        public static void StubPostRequestWithResponse(Mock<HttpMessageHandler> handlerMock, string urlEndsWith, string responseFile)
+        {
+            var response = new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(ReadFileBody(responseFile), Encoding.UTF8, "application/json")
+            };
+
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(x =>
+                        x.Method == HttpMethod.Post
+                        && x.RequestUri.AbsoluteUri.EndsWith(urlEndsWith, StringComparison.Ordinal)),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response)
+                .Verifiable();
+        }
+
+        /// <summary>POST error JSON body <c>{"code":"&lt;status&gt;"}</c> (mirrors smoke tests).</summary>
+        public static void StubPostErrorResponse(Mock<HttpMessageHandler> handlerMock, string urlEndsWith, HttpStatusCode code)
+        {
+            var err = "{\"code\":\"" + (int)code + "\"}";
+            var response = new HttpResponseMessage
+            {
+                StatusCode = code,
+                Content = new StringContent(err, Encoding.UTF8, "application/json")
+            };
+
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(x =>
+                        x.Method == HttpMethod.Post
+                        && x.RequestUri.AbsoluteUri.EndsWith(urlEndsWith, StringComparison.Ordinal)),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(response)
+                .Verifiable();
         }
 
         private static bool CompareJson(string source, string destination)

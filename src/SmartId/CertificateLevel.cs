@@ -10,10 +10,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,37 +24,38 @@
  * #L%
  */
 
-using System;
-using System.Collections.Generic;
-
 namespace SK.SmartId
 {
-    public class CertificateLevel
+    /// <summary>
+    /// Signing / authentication certificate levels (Smart-ID v3 API).
+    /// </summary>
+    public enum CertificateLevel
     {
-        private readonly string certificateLevel;
+        ADVANCED = 1,
+        QUALIFIED = 2,
+        QSCD = 2
+    }
 
-        private static readonly IReadOnlyDictionary<string, int> certificateLevels = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    public static class CertificateLevelExtensions
+    {
+        public static bool IsSupported(string certificateLevel)
         {
-            { "ADVANCED", 1 },
-            { "QUALIFIED", 2 }
-        };
-
-        public CertificateLevel(string certificateLevel)
-        {
-            this.certificateLevel = certificateLevel ?? throw new ArgumentException("certificateLevel cannot be null", nameof(certificateLevel));
+            return TryParse(certificateLevel, out _);
         }
 
-        public bool IsEqualOrAbove(string certificateLevel)
+        public static bool TryParse(string value, out CertificateLevel level)
         {
-            if (string.Equals(this.certificateLevel, certificateLevel, StringComparison.OrdinalIgnoreCase))
+            level = default;
+            if (string.IsNullOrEmpty(value))
             {
-                return true;
+                return false;
             }
-            else if (certificateLevels.ContainsKey(certificateLevel) && certificateLevels.ContainsKey(this.certificateLevel))
-            {
-                return certificateLevels[certificateLevel] <= certificateLevels[this.certificateLevel];
-            }
-            return false;
+            return System.Enum.TryParse(value, ignoreCase: false, out level);
+        }
+
+        public static bool IsSameLevelOrHigher(this CertificateLevel certificateLevel, CertificateLevel other)
+        {
+            return certificateLevel == other || (int)certificateLevel >= (int)other;
         }
     }
 }

@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -15,14 +19,18 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.x
+        dotnet-version: 10.x
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore smart-id-net-client.sln
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build smart-id-net-client.sln --no-restore -c Release
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test smart-id-net-client.sln --no-build -c Release --verbosity normal --filter "Category!=DemoIntegrationReadme"
+
+    - name: README demo integration (optional)
+      continue-on-error: true
+      run: dotnet test smart-id-net-client.sln --no-build -c Release --verbosity normal --filter "Category=DemoIntegrationReadme"

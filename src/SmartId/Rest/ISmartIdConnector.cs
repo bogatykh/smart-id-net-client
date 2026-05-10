@@ -10,10 +10,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,18 +35,45 @@ namespace SK.SmartId.Rest
     {
         Task<SessionStatus> GetSessionStatusAsync(string sessionId, CancellationToken cancellationToken = default);
 
-        Task<CertificateChoiceResponse> GetCertificateAsync(string documentNumber, CertificateRequest request, CancellationToken cancellationToken = default);
-
-        Task<CertificateChoiceResponse> GetCertificateAsync(SemanticsIdentifier identifier, CertificateRequest request, CancellationToken cancellationToken = default);
-
-        Task<SignatureSessionResponse> SignAsync(string documentNumber, SignatureSessionRequest request, CancellationToken cancellationToken = default);
-
-        Task<SignatureSessionResponse> SignAsync(SemanticsIdentifier identifier, SignatureSessionRequest request, CancellationToken cancellationToken = default);
-
-        Task<AuthenticationSessionResponse> AuthenticateAsync(string documentNumber, AuthenticationSessionRequest request, CancellationToken cancellationToken = default);
-
-        Task<AuthenticationSessionResponse> AuthenticateAsync(SemanticsIdentifier identity, AuthenticationSessionRequest request, CancellationToken cancellationToken = default);
-
         void SetSessionStatusResponseSocketOpenTime(TimeSpan? sessionStatusResponseSocketOpenTime);
+
+        Task<DeviceLinkSessionResponse> InitDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default);
+
+        Task<DeviceLinkSessionResponse> InitDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default);
+
+        Task<DeviceLinkSessionResponse> InitAnonymousDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request,
+            CancellationToken cancellationToken = default);
+
+        Task<NotificationAuthenticationSessionResponse> InitNotificationAuthenticationAsync(NotificationAuthenticationSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default);
+
+        Task<NotificationAuthenticationSessionResponse> InitNotificationAuthenticationAsync(NotificationAuthenticationSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default);
+
+        Task<DeviceLinkSessionResponse> InitDeviceLinkCertificateChoiceAsync(DeviceLinkCertificateChoiceSessionRequest request,
+            CancellationToken cancellationToken = default);
+
+        Task<LinkedSignatureSessionResponse> InitLinkedNotificationSignatureAsync(LinkedSignatureSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default);
+
+        Task<NotificationCertificateChoiceSessionResponse> InitNotificationCertificateChoiceAsync(NotificationCertificateChoiceSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default);
+
+        Task<CertificateResponse> GetCertificateByDocumentNumberAsync(string documentNumber, CertificateByDocumentNumberRequest request,
+            CancellationToken cancellationToken = default);
+
+        Task<DeviceLinkSessionResponse> InitDeviceLinkSignatureAsync(DeviceLinkSignatureSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default);
+
+        Task<DeviceLinkSessionResponse> InitDeviceLinkSignatureAsync(DeviceLinkSignatureSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default);
+
+        Task<NotificationSignatureSessionResponse> InitNotificationSignatureAsync(NotificationSignatureSessionRequest request,
+            SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default);
+
+        Task<NotificationSignatureSessionResponse> InitNotificationSignatureAsync(NotificationSignatureSessionRequest request,
+            string documentNumber, CancellationToken cancellationToken = default);
     }
 }

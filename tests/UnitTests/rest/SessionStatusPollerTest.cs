@@ -1,26 +1,6 @@
 /*-
  * #%L
  * Smart ID sample Java client
- * %%
- * Copyright (C) 2018 SK ID Solutions AS
- * %%
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
  * #L%
  */
 
@@ -144,7 +124,7 @@ namespace SK.SmartId.Rest
             public int responseNumber = 0;
             private TimeSpan? sessionStatusResponseSocketOpenTime;
 
-            public Task<SessionStatus> GetSessionStatusAsync(string sessionId, CancellationToken cancellationToken)
+            public Task<SessionStatus> GetSessionStatusAsync(string sessionId, CancellationToken cancellationToken = default)
             {
                 sessionIdUsed = sessionId;
                 requestUsed = CreateSessionStatusRequest(sessionId);
@@ -156,39 +136,44 @@ namespace SK.SmartId.Rest
                 this.sessionStatusResponseSocketOpenTime = sessionStatusResponseSocketOpenTime;
             }
 
-            public Task<CertificateChoiceResponse> GetCertificateAsync(String documentNumber, CertificateRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<CertificateChoiceResponse>(null);
-            }
+            public Task<DeviceLinkSessionResponse> InitDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request, SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default) =>
+                Task.FromResult<DeviceLinkSessionResponse>(null);
 
-            public Task<CertificateChoiceResponse> GetCertificateAsync(SemanticsIdentifier identifier,
-                CertificateRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<CertificateChoiceResponse>(null);
-            }
+            public Task<DeviceLinkSessionResponse> InitDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request, string documentNumber, CancellationToken cancellationToken = default) =>
+                Task.FromResult<DeviceLinkSessionResponse>(null);
 
-            public Task<SignatureSessionResponse> SignAsync(String documentNumber, SignatureSessionRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<SignatureSessionResponse>(null);
-            }
+            public Task<DeviceLinkSessionResponse> InitAnonymousDeviceLinkAuthenticationAsync(DeviceLinkAuthenticationSessionRequest request, CancellationToken cancellationToken = default) =>
+                Task.FromResult<DeviceLinkSessionResponse>(null);
 
-            public Task<SignatureSessionResponse> SignAsync(SemanticsIdentifier identifier,
-                SignatureSessionRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<SignatureSessionResponse>(null);
-            }
+            public Task<NotificationAuthenticationSessionResponse> InitNotificationAuthenticationAsync(NotificationAuthenticationSessionRequest request, SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default) =>
+                Task.FromResult<NotificationAuthenticationSessionResponse>(null);
 
-            public Task<AuthenticationSessionResponse> AuthenticateAsync(String documentNumber, AuthenticationSessionRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<AuthenticationSessionResponse>(null);
-            }
+            public Task<NotificationAuthenticationSessionResponse> InitNotificationAuthenticationAsync(NotificationAuthenticationSessionRequest request, string documentNumber, CancellationToken cancellationToken = default) =>
+                Task.FromResult<NotificationAuthenticationSessionResponse>(null);
 
+            public Task<DeviceLinkSessionResponse> InitDeviceLinkCertificateChoiceAsync(DeviceLinkCertificateChoiceSessionRequest request, CancellationToken cancellationToken = default) =>
+                Task.FromResult<DeviceLinkSessionResponse>(null);
 
-            public Task<AuthenticationSessionResponse> AuthenticateAsync(SemanticsIdentifier identity,
-                AuthenticationSessionRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<AuthenticationSessionResponse>(null);
-            }
+            public Task<LinkedSignatureSessionResponse> InitLinkedNotificationSignatureAsync(LinkedSignatureSessionRequest request, string documentNumber, CancellationToken cancellationToken = default) =>
+                Task.FromResult<LinkedSignatureSessionResponse>(null);
+
+            public Task<NotificationCertificateChoiceSessionResponse> InitNotificationCertificateChoiceAsync(NotificationCertificateChoiceSessionRequest request, SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default) =>
+                Task.FromResult<NotificationCertificateChoiceSessionResponse>(null);
+
+            public Task<CertificateResponse> GetCertificateByDocumentNumberAsync(string documentNumber, CertificateByDocumentNumberRequest request, CancellationToken cancellationToken = default) =>
+                Task.FromResult<CertificateResponse>(null);
+
+            public Task<DeviceLinkSessionResponse> InitDeviceLinkSignatureAsync(DeviceLinkSignatureSessionRequest request, SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default) =>
+                Task.FromResult<DeviceLinkSessionResponse>(null);
+
+            public Task<DeviceLinkSessionResponse> InitDeviceLinkSignatureAsync(DeviceLinkSignatureSessionRequest request, string documentNumber, CancellationToken cancellationToken = default) =>
+                Task.FromResult<DeviceLinkSessionResponse>(null);
+
+            public Task<NotificationSignatureSessionResponse> InitNotificationSignatureAsync(NotificationSignatureSessionRequest request, SemanticsIdentifier semanticsIdentifier, CancellationToken cancellationToken = default) =>
+                Task.FromResult<NotificationSignatureSessionResponse>(null);
+
+            public Task<NotificationSignatureSessionResponse> InitNotificationSignatureAsync(NotificationSignatureSessionRequest request, string documentNumber, CancellationToken cancellationToken = default) =>
+                Task.FromResult<NotificationSignatureSessionResponse>(null);
 
             private SessionStatusRequest CreateSessionStatusRequest(String sessionId)
             {

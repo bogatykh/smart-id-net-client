@@ -97,7 +97,7 @@ namespace SK.SmartId
             SmartIdAuthenticationResponse response = CreateValidationResponseWithInvalidEndResult();
 
             var exception = Assert.Throws<UnprocessableSmartIdResponseException>(() => validator.Validate(response));
-            Assert.Contains("Smart-ID API returned end result code 'NOT OK'", exception.Message);
+            Assert.Equal("Unexpected session result: NOT OK", exception.Message);
         }
 
         [Fact]
@@ -363,10 +363,8 @@ namespace SK.SmartId
             return Convert.FromBase64String(base64Certificate);
         }
 
-        public static X509Certificate2 GetX509Certificate(byte[] certificateBytes)
-        {
-            return new X509Certificate2(certificateBytes);
-        }
+        public static X509Certificate2 GetX509Certificate(byte[] certificateBytes) =>
+            X509CertificateLoader.LoadCertificate(certificateBytes);
 
         private void AssertAuthenticationIdentityValid(AuthenticationIdentity authenticationIdentity, X509Certificate2 certificate)
         {
